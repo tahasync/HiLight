@@ -66,7 +66,11 @@ jobs:
       - name: Verify APK signature
         run: |
           APK=build/app/outputs/flutter-apk/app-release.apk
-          if jarsigner -verify "$APK" | grep -qi "jar verified"; then
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -n1)"
+          echo "::notice ::Using $APKSIGNER"
+          # Modern builds sign with scheme v2/v3 (minSdk >= 24 skips JAR
+          # signing), so jarsigner is not a valid check here.
+          if "$APKSIGNER" verify --verbose "$APK" | tee /dev/stderr | grep -q "Verified using"; then
             echo "::notice ::APK signature OK"
           else
             echo "::error ::APK signature verification failed"
