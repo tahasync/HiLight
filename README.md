@@ -1,11 +1,22 @@
-# HiLight
-<<<<<<< HEAD
-HiLight — Pixel-inspired dynamic rear flash effects for Android, built with Flutter and Material 3 Expressive.
-=======
-
 <p align="center">
   <img src="assets/icon/hilight_logo.png" width="128" alt="HiLight logo"/>
 </p>
+
+<h1 align="center">HiLight</h1>
+
+<p align="center">
+  <a href="https://github.com/tahasync/HiLight/actions/workflows/build.yml">
+    <img src="https://github.com/tahasync/HiLight/actions/workflows/build.yml/badge.svg" alt="Build status"/>
+  </a>
+  <a href="https://github.com/tahasync/HiLight/releases">
+    <img src="https://img.shields.io/github/v/release/tahasync/HiLight?include_prereleases" alt="Release"/>
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License"/>
+  </a>
+</p>
+
+---
 
 **Pixel-inspired dynamic rear-flash effects for Android — built with Flutter, Kotlin and Material 3 Expressive.**
 
@@ -13,25 +24,32 @@ HiLight recreates a HiLight-style notification-light experience using the phone'
 
 Works on modern Android phones (Android 13+), including devices **without** adjustable torch brightness: on those, HiLight simulates smooth intensity through perceptual duty-cycle modulation of the LED.
 
-## Features
+## ✨ Features
 
-- 🎞️ **Five presets** — Pulse · Breathing · Double Pulse · Soft Glow · Heartbeat
-- 🎛️ **Controls** — Brightness, Speed (0.25×–3×), Repeat (Once / 2× / 3× / Loop)
-- 👁️ **Live preview** — on-screen glow driven by the exact same animation definition as the physical flash, from one shared clock origin
-- 🔍 **Capability detection** — rear-flash presence, torch availability, adjustable-strength support and maximum level (diagnostics screen)
-- 🌗 **Graceful fallback** — ON/OFF-only hardware gets simulated brightness via a 33 Hz duty-cycle carrier with perceptual gamma; keyframe valleys stay true-off
-- 🧠 **Adaptive carrier** — widens automatically when the camera HAL is slow; native call rate capped well below jank territory
-- 🛡️ **Safety-first** — torch force-killed on errors, backgrounding or screen exit; typed structured errors instead of raw platform exceptions
-- ⚙️ **Persistence** — theme and last-used animation settings survive restarts (local-only); reset-to-defaults in Settings
-- 🎨 **Material 3 Expressive UI** — restrained liquid-glass surfaces; system / light / dark themes; dynamic color
+| | |
+|---|---|
+| 🎞️ **Five presets** | Pulse · Breathing · Double Pulse · Soft Glow · Heartbeat |
+| 🎛️ **Controls** | Brightness · Speed (0.25×–3×) · Repeat (Once / 2× / 3× / Loop) |
+| 👁️ **Live preview** | On-screen glow driven by the exact same animation definition as the physical flash, from one shared clock origin |
+| 🔍 **Capability detection** | Rear-flash presence, torch availability, adjustable-strength support and maximum level |
+| 🌗 **Graceful fallback** | ON/OFF-only hardware gets simulated smoothness via a 33 Hz duty-cycle carrier with perceptual gamma |
+| 🧠 **Adaptive carrier** | Widens automatically when the camera HAL is slow; native call rate capped |
+| 🛡️ **Safety-first** | Torch force-killed on errors, backgrounding or screen exit; typed structured errors |
+| ⚙️ **Persistence** | Theme and last-used animation settings survive restarts (local-only) |
+| 🎨 **Material 3 Expressive** | Restrained liquid-glass surfaces · system / light / dark themes · dynamic color |
 
-## Privacy & permissions
+## 📲 Installation
 
-- 100% offline — no account, no cloud, no analytics, no telemetry
+Grab the latest APK from the [Releases](https://github.com/tahasync/HiLight/releases) page and install it directly (sideloading). Requires Android 13 or newer.
+
+## 🔒 Privacy & permissions
+
+- **100% offline** — no account, no cloud, no analytics, no telemetry
 - Requests **no sensitive permissions**: no camera, microphone, location or storage access
-  (Camera2 torch APIs deliberately operate without the CAMERA permission)
 
-## Building
+Camera2 torch APIs deliberately operate without the CAMERA permission.
+
+## 🛠️ Building from source
 
 ```bash
 flutter pub get
@@ -39,22 +57,31 @@ flutter test          # 54 tests
 flutter build apk --release
 ```
 
-Release CI lives in [.github/workflows/build.yml](.github/workflows/build.yml):
-pushes to `main` produce signed APK artifacts; pushing a tag `v*` additionally
-creates a GitHub Release with the APK and changelog notes from
-[CHANGELOG.md](CHANGELOG.md). Signing material is supplied exclusively via
-repository secrets — never committed.
+Release CI lives in [`.github/workflows/build.yml`](.github/workflows/build.yml):
 
-## Device support
+- pushes to `main` → signed APK build artifacts
+- pushing a `v*` tag → GitHub Release with APK + changelog notes from [`CHANGELOG.md`](CHANGELOG.md)
 
-| Capability | Behavior |
+Signing material is supplied exclusively via repository secrets — never committed.
+
+## 📱 Device support
+
+| Hardware | Behavior |
 |---|---|
 | Adjustable torch strength (e.g., recent Pixels) | True variable-brightness animations across the device's level range |
 | ON/OFF-only torch (older devices) | Simulated smoothness via duty-cycle modulation |
 
-Verified across Pixel 9 (Android 17) and Pixel 4 (ON/OFF-class). Torch behavior varies by OEM — runtime capability detection, not device model, decides the path.
+Verified across **Pixel 9** (Android 17) and **Pixel 4** (ON/OFF-class). Torch behavior varies by OEM — runtime capability detection, not device model, decides the code path.
+
+## 🗺️ Roadmap
+
+- Custom animation editor & extra presets
+- Quick Settings tile
+- Notification & charging triggers
+- Broader OEM device matrix
+
+See [`CHANGELOG.md`](CHANGELOG.md) for release history.
 
 ## License
 
-See [LICENSE](LICENSE).
->>>>>>> 04b7daa (docs: project README)
+[Apache-2.0](LICENSE)
