@@ -3,6 +3,26 @@
 All notable changes to HiLight are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## v1.1.5 — Notification triggers, per-contact & per-app patterns
+
+First slice of the V1.2 milestone, verified live on Pixel 9 (Android 17) and Pixel 4 (Android 16).
+
+### Added
+| :bell: **Notification triggers** | Flash on incoming calls (repeats while ringing, stops on answer), SMS, alarms, timers or app notifications — each mapped to any preset |
+- **Ring-looping calls**: the call animation repeats while the phone rings and stops the moment the ring notification disappears (answered / declined), with a hard safety cap inside the wake-lock window.
+| :bust_in_silhouette: **Per-contact patterns** | Assign a preset to specific people — their calls flash differently from everyone else's |
+| :iphone: **Per-app control** | Enable, disable, or re-style flashing for every installed app individually |
+- Deterministic trigger precedence: **contact > app > generic > none** â€” covered by unit tests for every combination.
+- Long-pressing a built-in preset now opens the editor as an editable copy; long-pressing a custom animation still edits it in place.
+
+### Fixed
+- Concurrent-notification race that could restart the torch mid-animation (start gating is now atomic).
+- SMS trigger no longer fires for chat platforms (WhatsApp / Snapchat / Instagram label their messages with the same category as SMS); messaging apps are matched explicitly.
+- Launcher icon: full-bleed foreground at a measured inset â€” complete logo, no dead padding, no mask cropping.
+
+### Testing
+- 169 passing unit/widget tests (up from 114): trigger classification matrix, contact/app stores and corruption handling, precedence combinations, ring-loop replay/removal/cap, race regression.
+
 ## v1.1.0 — Custom animations, Quick Settings tile & three new presets
 
 ### Added

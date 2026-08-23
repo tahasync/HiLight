@@ -1,5 +1,8 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'notification_trigger_classifier.dart';
+import 'trigger_settings.dart';
+
 /// Snapshot of every persisted setting (PRD §19), with defaults applied.
 class PreferencesSnapshot {
   const PreferencesSnapshot({
@@ -72,6 +75,33 @@ class PreferencesService {
 
   Future<void> setDebugLogging(bool value) async =>
       (await SharedPreferences.getInstance()).setBool(_keyDebugLogging, value);
+
+  /// Loads per-trigger configuration (prd-v1.2.md §2), defaults applied for
+  /// anything not persisted yet. Every trigger starts disabled.
+  Future<Map<TriggerKind, TriggerConfig>> loadTriggerConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      for (final kind in kTriggerKinds)
+        kind: TriggerConfig(
+          enabled: prefs.getBool(_triggerEnabledKey(kind)) ??
+              defaultTriggerConfig(kind).enabled,
+          presetId: prefs.getString(_triggerPresetKey(kind)) ??
+              defaultTriggerConfig(kind).presetId,
+        ),
+    };
+  }
+
+  Future<void> setTriggerEnabled(TriggerKind kind, bool enabled) async =>
+      (await SharedPreferences.getInstance())
+          .setBool(_triggerEnabledKey(kind), enabled);
+
+  Future<void> setTriggerPresetId(TriggerKind kind, String presetId) async =>
+      (await SharedPreferences.getInstance())
+          .setString(_triggerPresetKey(kind), presetId);
+
+  static String _triggerEnabledKey(TriggerKind kind) => 'trigger.${kind.name}.enabled';
+
+  static String _triggerPresetKey(TriggerKind kind) => 'trigger.${kind.name}.presetId';
 
   Future<void> clear() async => (await SharedPreferences.getInstance()).clear();
 }

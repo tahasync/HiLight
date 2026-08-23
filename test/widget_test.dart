@@ -388,24 +388,32 @@ void main() {
   group('Settings persistence (PRD §19)', () {
     testWidgets('settings screen renders every section', (tester) async {
       await pumpSettings(tester, await makeSettings());
-      // Scroll the full length so every section builds and is visible.
-      await tester.drag(find.byType(ListView), const Offset(0, -1200));
+      // The list is long enough that ListView lazily disposes far-off
+      // children, so check sections per scroll position.
+      await tester.drag(find.byType(ListView), const Offset(0, -3000));
       await tester.pumpAndSettle();
-
       for (final section in [
-        'Appearance',
-        'Animation',
         'Hardware',
         'Advanced',
       ]) {
         expect(find.text(section), findsOneWidget);
       }
+      expect(find.text('Capability diagnostics'), findsOneWidget);
+      expect(find.text('Reset all settings'), findsOneWidget);
+
+      await tester.drag(find.byType(ListView), const Offset(0, 3000));
+      await tester.pumpAndSettle();
+      for (final section in [
+        'Appearance',
+        'Animation',
+        'Triggers',
+      ]) {
+        expect(find.text(section), findsOneWidget);
+      }
       expect(find.text('Default preset'), findsOneWidget);
       expect(find.text('Haptic feedback'), findsOneWidget);
-      expect(find.text('Capability diagnostics'), findsOneWidget);
-      expect(find.text('Torch update rate'), findsOneWidget);
-      expect(find.text('Debug logging'), findsOneWidget);
-      expect(find.text('Reset all settings'), findsOneWidget);
+      expect(find.text('Notification access'), findsOneWidget);
+      expect(find.text('Incoming call'), findsOneWidget);
     });
 
     testWidgets('changes persist to the local store', (tester) async {

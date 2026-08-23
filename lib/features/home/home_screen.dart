@@ -1,8 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Easing;
 
+import '../../core/motion/easing.dart';
+import '../../core/motion/hilight_animation.dart';
 import '../../core/theme/glass_theme.dart';
 import '../../services/torch_service.dart';
 import '../animation_editor/animation_editor_screen.dart';
+import '../animation_editor/custom_animation_id.dart';
 import '../animation_editor/stored_custom_animation.dart';
 import '../diagnostics/diagnostics_screen.dart';
 import '../settings/app_settings_controller.dart';
@@ -266,17 +269,31 @@ class _PresetPickerCard extends StatelessWidget {
               children: [
                 for (final preset in controller.selectablePresets)
                   GestureDetector(
-                    onLongPress:
-                        preset.id.startsWith('custom_')
-                            ? () {
-                                for (final custom in customs) {
-                                  if (custom.id == preset.id) {
-                                    onEditCustom(custom);
-                                    return;
-                                  }
-                                }
-                              }
-                            : null,
+                    onLongPress: () {
+                      // Custom animations edit in place; built-ins are
+                      // immutable PRD tables (§28) and open as an editable
+                      // copy instead.
+                      if (preset.id.startsWith('custom_')) {
+                        for (final custom in customs) {
+                          if (custom.id == preset.id) {
+                            onEditCustom(custom);
+                            return;
+                          }
+                        }
+                        return;
+                      }
+                      onEditCustom(
+                        StoredCustomAnimation(
+                          animation: HilightAnimation(
+                            id: newCustomAnimationId(),
+                            name: '${preset.name} copy',
+                            duration: preset.duration,
+                            keyframes: List.of(preset.keyframes),
+                          ),
+                          easing: Easing.linear,
+                        ),
+                      );
+                    },
                     child: FilterChip(
                       label: Text(preset.name),
                       selected: preset.id == controller.selectedPreset.id,
@@ -288,7 +305,8 @@ class _PresetPickerCard extends StatelessWidget {
             if (customs.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text(
-                'Long-press one of your animations to edit it.',
+                'Long-press any animation to edit it — built-ins open as an '
+                'editable copy.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

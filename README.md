@@ -31,6 +31,9 @@ Works on modern Android phones (Android 13+), including devices **without** adju
 | 🎞️ **Eight presets** | Pulse · Breathing · Double Pulse · Soft Glow · Heartbeat · Quick Flash · Triple Pulse · Long Glow |
 | 🎨 **Custom animation editor** | Add/remove keyframes (2–20), per-keyframe time & intensity, duration, easing curve — with live preview and editor-side validation |
 | 💾 **Save · rename · delete** | Custom animations persist locally (`custom_<uuid>` namespace) — no account, no cloud |
+| :bell: **Notification triggers** | Flash on incoming calls (repeats while ringing, stops on answer), SMS, alarms, timers or app notifications — each mapped to any preset |
+| :bust_in_silhouette: **Per-contact patterns** | Assign a preset to specific people — their calls flash differently from everyone else's |
+| :iphone: **Per-app control** | Enable, disable, or re-style flashing for every installed app individually |
 | 🎛️ **Controls** | Brightness · Speed (0.25×–3×) · Repeat (Once / 2× / 3× / Loop) |
 | 👁️ **Live preview** | On-screen glow driven by the exact same animation definition as the physical flash, from one shared clock origin |
 | ⚡ **Quick Settings tile** | Start/stop the default animation from the tile — its state mirrors the engine, even after natural completion |
@@ -50,7 +53,8 @@ Grab the latest APK from the [Releases](https://github.com/tahasync/HiLight/rele
 
 - Your data never leaves the device — animations and settings are stored **locally only**, no account, no cloud, no analytics, no telemetry
 - The **only** network request is an optional update check against the [GitHub Releases API](https://github.com/tahasync/HiLight/releases); it fails silently offline
-- Requests **no sensitive permissions**: no camera, microphone, location or storage access
+- **Opt-in permission model**: notification-listener access is requested only when you enable a trigger; contacts permission only when you add a per-contact pattern; nothing is requested at launch
+- Trigger configuration (contacts, apps, presets) is stored **locally only** â€” notification content is never read, parsed, logged or stored
 
 Camera2 torch APIs deliberately operate without the CAMERA permission.
 

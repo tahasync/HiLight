@@ -2,15 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/motion/hilight_animation.dart';
 import '../../core/motion/preset_definitions.dart';
 import '../../core/theme/glass_theme.dart';
+import '../../services/notification_access_service.dart';
+import '../../services/notification_trigger_classifier.dart';
 import '../../services/torch_service.dart';
+import '../../services/trigger_settings.dart';
 import '../animation_editor/stored_custom_animation.dart';
 import '../diagnostics/diagnostics_screen.dart';
+import 'app_overrides_screen.dart';
 import 'app_settings_controller.dart';
+import 'contact_overrides_screen.dart';
 
-/// Settings screen covering PRD §19: appearance, animation defaults,
-/// hardware, and advanced options. Every change persists locally (§24).
+/// Settings screen covering PRD §19 plus the V1.2 additions (prd-v1.2.md
+/// §5): appearance, animation defaults, triggers, hardware, and advanced
+/// options. Every change persists locally (§24).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     required this.settings,
@@ -128,6 +135,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const _SectionHeader('Triggers'),
+              _TriggersSection(settings: settings, customAnimations: customAnimations),
               const _SectionHeader('Hardware'),
               GlassSurface(
                 blur: false,
@@ -258,6 +267,308 @@ class _SectionHeader extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
       child: Text(title, style: Theme.of(context).textTheme.titleMedium),
+    );
+  }
+}
+
+/// Triggers section (prd-v1.2.md §2/§5): notification-access status with a
+/// direct link to the system screen, plus one configurable row per generic
+/// trigger type.
+///
+/// Permissions discipline: listener access is only ever *requested* from
+/// inside the enable flow — when the user flips a trigger on without
+/// access. An explanation dialog precedes the hand-off to system settings,
+/// and a granted return completes the pending enable automatically.
+class _TriggersSection extends StatefulWidget {
+  const _TriggersSection({
+    required this.settings,
+    required this.customAnimations,
+  });
+
+  final AppSettingsController settings;
+  final List<StoredCustomAnimation> customAnimations;
+
+  @override
+  State<_TriggersSection> createState() => _TriggersSectionState();
+}
+
+class _TriggersSectionState extends State<_TriggersSection>
+    with WidgetsBindingObserver {
+  static const _access = NotificationAccessService();
+
+  bool _granted = false;
+  TriggerKind? _pendingEnable;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _recheckAccess();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Returning from the system notification-access screen re-evaluates the
+    // grant and completes any pending enable.
+    if (state == AppLifecycleState.resumed) _recheckAccess(applyPending: true);
+  }
+
+  Future<void> _recheckAccess({bool applyPending = false}) async {
+    final granted = await _access.isGranted();
+    if (!mounted) return;
+    setState(() => _granted = granted);
+    if (!applyPending || !granted) return;
+    final pending = _pendingEnable;
+    if (pending != null) {
+      setState(() => _pendingEnable = null);
+      widget.settings.setTriggerEnabled(pending, true);
+    }
+  }
+
+  Future<void> _onToggle(TriggerKind kind, bool want) async {
+    if (!want) {
+      widget.settings.setTriggerEnabled(kind, false);
+      return;
+    }
+    if (_granted) {
+      widget.settings.setTriggerEnabled(kind, true);
+      return;
+    }
+    // The exact-moment request: explain why first (prd.md §23), then hand
+    // off to Android's notification-access screen.
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Notification access needed'),
+        content: const Text(
+          'To flash on this event, Android requires notification access. '
+          'HiLight never reads or stores message text or sender details — '
+          'it only reacts to notification events.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Open settings'),
+          ),
+        ],
+      ),
+    );
+    if (proceed ?? false) {
+      setState(() => _pendingEnable = kind);
+      await _access.openSystemSettings();
+      await _recheckAccess(applyPending: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = widget.settings;
+    return GlassSurface(
+      blur: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: Icon(
+              _granted
+                  ? Icons.notifications_active_outlined
+                  : Icons.notifications_off_outlined,
+            ),
+            title: const Text('Notification access'),
+            subtitle: Text(_granted
+                ? 'Granted'
+                : (_pendingEnable != null
+                    ? 'Not granted — waiting for access…'
+                    : 'Not granted')),
+            trailing: IconButton(
+              tooltip: 'Open Android notification settings',
+              icon: const Icon(Icons.open_in_new),
+              onPressed: () async {
+                await _access.openSystemSettings();
+                await _recheckAccess(applyPending: true);
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: Text(
+              'Triggers rely on Android\'s notification listener. Doze mode, '
+              'battery optimization, or aggressive OEM battery managers can '
+              'delay or suppress them — and some clock apps label timers as '
+              'alarms.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+          ),
+          const Divider(height: 1),
+          for (final kind in kTriggerKinds)
+            _TriggerTile(
+              kind: kind,
+              config: settings.triggerConfigFor(kind),
+              presets: _presetOptions(),
+              onToggle: (want) => _onToggle(kind, want),
+              onPresetSelected: (id) =>
+                  settings.setTriggerPresetId(kind, id),
+              // Per-contact overrides attach to the call trigger, per-app
+              // decisions to app notifications (prd-v1.2.md §2/§3).
+              trailingChild: switch (kind) {
+                TriggerKind.incomingCall =>
+                  _ContactOverridesEntry(presets: _presetOptions()),
+                TriggerKind.appNotification =>
+                  _AppOverridesEntry(presets: _presetOptions()),
+                _ => null,
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  List<HilightAnimation> _presetOptions() => [
+        ...kBuiltinPresets,
+        for (final custom in widget.customAnimations) custom.animation,
+      ];
+}
+
+class _TriggerTile extends StatelessWidget {
+  const _TriggerTile({
+    required this.kind,
+    required this.config,
+    required this.presets,
+    required this.onToggle,
+    required this.onPresetSelected,
+    this.trailingChild,
+  });
+
+  final TriggerKind kind;
+  final TriggerConfig config;
+  final List<HilightAnimation> presets;
+  final ValueChanged<bool> onToggle;
+  final ValueChanged<String> onPresetSelected;
+
+  /// Optional extra content shown when the trigger is enabled (e.g. the
+  /// per-contact override entry for calls).
+  final Widget? trailingChild;
+
+  String get _description => switch (kind) {
+        TriggerKind.incomingCall =>
+          'Flash on call notifications while the screen is off',
+        TriggerKind.sms =>
+          'Flash for SMS/MMS from your messaging app — chat apps like '
+              'WhatsApp count as App notifications',
+        TriggerKind.alarm =>
+          'Alarm notifications — Android labels many clock-app timers this way too',
+        TriggerKind.timer =>
+          'Timer notifications where the clock app distinguishes them',
+        TriggerKind.appNotification =>
+          'Other apps\' notifications; ongoing ones like media playback are ignored',
+      };
+
+  String? _presetName(String id) {
+    for (final preset in presets) {
+      if (preset.id == id) return preset.name;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SwitchListTile(
+          contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          title: Text(kind.label),
+          subtitle: Text(_description),
+          value: config.enabled,
+          onChanged: onToggle,
+        ),
+        if (config.enabled)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: DropdownMenu<String>(
+              expandedInsets: EdgeInsets.zero,
+              initialSelection: _presetName(config.presetId) != null
+                  ? config.presetId
+                  : null,
+              label: const Text('Preset'),
+              dropdownMenuEntries: [
+                for (final preset in presets)
+                  DropdownMenuEntry(value: preset.id, label: preset.name),
+              ],
+              onSelected: (value) {
+                if (value != null) onPresetSelected(value);
+              },
+            ),
+          ),
+        if (config.enabled && trailingChild != null) trailingChild!,
+      ],
+    );
+  }
+}
+
+/// Entry row opening the per-contact override manager.
+class _ContactOverridesEntry extends StatelessWidget {
+  const _ContactOverridesEntry({required this.presets});
+
+  final List<HilightAnimation> presets;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      leading: const Icon(Icons.person_pin_circle_outlined),
+      title: Text(
+        'Contact overrides',
+        style: Theme.of(context).textTheme.bodyLarge,
+      ),
+      subtitle: const Text('Assign a preset to specific people'),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              ContactOverridesScreen(presets: presets),
+        ),
+      ),
+    );
+  }
+}
+
+/// Entry row opening the per-app override manager.
+class _AppOverridesEntry extends StatelessWidget {
+  const _AppOverridesEntry({required this.presets});
+
+  final List<HilightAnimation> presets;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      leading: const Icon(Icons.apps_outlined),
+      title: Text(
+        'App overrides',
+        style: Theme.of(context).textTheme.bodyLarge,
+      ),
+      subtitle: const Text(
+        'Enable, disable, or re-style every app individually',
+      ),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              AppOverridesScreen(presets: presets),
+        ),
+      ),
     );
   }
 }

@@ -60,6 +60,7 @@ object TileEngineHost {
         )
         TorchChannel(TorchController(context.applicationContext))
             .register(engine)
+        TriggerSupportChannel.register(engine, context.applicationContext)
         val control = TileControlChannel.attach(engine)
         headlessEngine = engine
         return control
@@ -68,6 +69,9 @@ object TileEngineHost {
     /** Called from the tile channel whenever Dart reports a state change. */
     fun onStateChanged(active: Boolean) {
         lastKnownActive = active
+        // Trigger playback (notification listener) holds a wake lock for as
+        // long as Dart reports active; idle means safe to release.
+        if (!active) TriggerWakeLock.releaseIfHeld()
         stateListener?.invoke(active)
         // The headless engine is intentionally kept alive for the process
         // lifetime: a second directly-constructed FlutterEngine cannot run
@@ -116,14 +120,19 @@ object TileControlChannel {
     }
 
     /**
-     * Invokes [method] on the Dart side, retrying briefly if the isolate has
-     * not installed its handler yet (fresh headless engines need a moment to
-     * reach main()/tileMain()). A permanently missing handler leaves the
-     * tile in its current state rather than appearing to succeed.
+     * Invokes [method] with optional [arguments] on the Dart side, retrying
+     * briefly if the isolate has not installed its handler yet (fresh
+     * headless engines need a moment to reach main()/tileMain()). A
+     * permanently missing handler leaves the tile in its current state
+     * rather than appearing to succeed.
      */
-    fun invokeWithRetry(method: String, attempt: Int = 0) {
+    fun invokeWithRetry(
+        method: String,
+        arguments: Any? = null,
+        attempt: Int = 0,
+    ) {
         val channel = outbound ?: return
-        channel.invokeMethod(method, null, object : MethodChannel.Result {
+        channel.invokeMethod(method, arguments, object : MethodChannel.Result {
             override fun success(result: Any?) {}
             override fun error(errorCode: String, message: String?, details: Any?) {
                 if (attempt < 5) {

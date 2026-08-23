@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../services/notification_trigger_classifier.dart';
 import '../../services/preferences_service.dart';
+import '../../services/trigger_settings.dart';
 
 /// Owns every persisted setting (PRD §19) and notifies listeners on change.
 /// Also backs the app-wide theme, replacing the earlier theme-only
@@ -27,6 +29,10 @@ class AppSettingsController extends ChangeNotifier {
   int updateRateMs = 10;
   bool debugLogging = false;
 
+  /// Per-trigger configuration (prd-v1.2.md §2/§5). Empty until [load]
+  /// completes; every entry defaults to disabled.
+  Map<TriggerKind, TriggerConfig> triggerConfig = const {};
+
   Future<void> load() async {
     final snapshot = await _prefs.loadAll();
     themeMode = switch (snapshot.themeModeName) {
@@ -41,6 +47,7 @@ class AppSettingsController extends ChangeNotifier {
     hapticsEnabled = snapshot.hapticsEnabled;
     updateRateMs = snapshot.updateRateMs;
     debugLogging = snapshot.debugLogging;
+    triggerConfig = await _prefs.loadTriggerConfig();
     notifyListeners();
   }
 
@@ -92,6 +99,35 @@ class AppSettingsController extends ChangeNotifier {
     debugLogging = enabled;
     notifyListeners();
     _prefs.setDebugLogging(enabled);
+  }
+
+  TriggerConfig triggerConfigFor(TriggerKind kind) =>
+      triggerConfig[kind] ?? defaultTriggerConfig(kind);
+
+  /// Enables or disables one trigger kind (prd-v1.2.md §2). The caller is
+  /// responsible for having verified notification access first — the
+  /// Settings UI gates this behind the access flow so listener access is
+  /// only requested at this exact moment.
+  void setTriggerEnabled(TriggerKind kind, bool enabled) {
+    final current = triggerConfigFor(kind);
+    if (current.enabled == enabled) return;
+    triggerConfig = {
+      ...triggerConfig,
+      kind: current.copyWith(enabled: enabled),
+    };
+    notifyListeners();
+    _prefs.setTriggerEnabled(kind, enabled);
+  }
+
+  void setTriggerPresetId(TriggerKind kind, String presetId) {
+    final current = triggerConfigFor(kind);
+    if (current.presetId == presetId) return;
+    triggerConfig = {
+      ...triggerConfig,
+      kind: current.copyWith(presetId: presetId),
+    };
+    notifyListeners();
+    _prefs.setTriggerPresetId(kind, presetId);
   }
 
   /// Restores every setting to its default and clears stored values.

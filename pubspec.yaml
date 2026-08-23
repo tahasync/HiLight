@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.1.0+6
+version: 1.1.5+7
 
 environment:
   sdk: ^3.12.2
@@ -58,14 +58,16 @@ flutter_launcher_icons:
   image_path: "assets/icon/hilight_logo.png"
   android: true
   ios: false
+  # The artwork is a self-contained rounded-square tile, so it belongs in
+  # the adaptive FOREGROUND. Inset is measured against the launcher mask:
+  # the target device uses a circular mask (~66% visible width), so a 13%
+  # inset (74% tile) bleeds every edge past the mask — zero black borders —
+  # while only the outer corner tips get cropped. (24% = small island in
+  # black; 17% = black gaps along edges on circle masks; full-bleed
+  # background = artwork visibly zoom-cropped. All three tried on-device.)
   adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/icon/hilight_logo.png"
-  # Safe zone sized from measurement: the artwork's farthest pixel sits at
-  # 53.6% of source width from center, so rendered radius =
-  # 53.6% x (1 - 2*inset) must stay under the ~30.6% safe-circle radius of
-  # the 108dp adaptive canvas. 24% yields ~27.9% -> fits circle, squircle,
-  # rounded-square masks without clipping while keeping the logo large.
-  adaptive_icon_foreground_inset: 24
+  adaptive_icon_foreground_inset: 13
   # Themed (monochrome) icons on Android 13+: system tints the alpha
   # silhouette, matching every launcher style.
   adaptive_icon_monochrome: "assets/icon/hilight_logo.png"

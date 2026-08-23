@@ -2,6 +2,14 @@
     <!-- Required by the GitHub Releases update check (release builds do not
          inherit the debug manifest's INTERNET permission). -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Normal install-time permission (no runtime prompt): keeps the CPU
+         alive while a notification-triggered animation plays so the
+         cached-app freezer cannot strand the torch lit mid-animation. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <!-- Runtime permission for per-contact overrides (prd-v1.2.md §2):
+         requested ONLY at the moment the user taps "Add contact", never
+         preemptively. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS"/>
     <application
         android:label="hilight"
         android:name="${applicationName}"
@@ -40,6 +48,19 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE"/>
             </intent-filter>
         </service>
+        <!-- Notification-listener bridge for trigger effects
+             (prd-v1.2.md §2). Access is granted exclusively through the
+             system notification-access screen, which the app opens only at
+             the moment the user enables a trigger — never preemptively. -->
+        <service
+            android:name=".torch.HilightNotificationListenerService"
+            android:exported="true"
+            android:label="HiLight trigger effects"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService"/>
+            </intent-filter>
+        </service>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -55,6 +76,20 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Contacts picker for per-contact overrides (prd-v1.2.md §2):
+             required on Android 11+ so the app may resolve the system
+             picker activity. -->
+        <intent>
+            <action android:name="android.intent.action.PICK"/>
+            <data android:mimeType="vnd.android.cursor.dir/contact"/>
+        </intent>
+        <!-- Launchable-app listing for per-app overrides (prd-v1.2.md §3):
+             grants visibility of activities other apps expose as launcher
+             entry points. No permission involved. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN"/>
+            <category android:name="android.intent.category.LAUNCHER"/>
         </intent>
     </queries>
 </manifest>

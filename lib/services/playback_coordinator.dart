@@ -23,6 +23,11 @@ class PlaybackCoordinator {
   Future<void> Function()? _externalStart;
   Future<void> Function()? _tileStop;
 
+  /// Inbound trigger events from Kotlin (notification listener today,
+  /// charging broadcasts later — prd-v1.2.md §2/§4). The handler owns all
+  /// decision logic; the coordinator only forwards the raw arguments map.
+  Future<void> Function(Map<Object?, Object?> arguments)? _triggerHandler;
+
   /// Idempotent; installs the inbound handler for tile requests.
   void attach() {
     if (_attached) return;
@@ -35,11 +40,25 @@ class PlaybackCoordinator {
           _publish(force: true);
         case 'tileStop':
           await _tileStop?.call();
+        case 'triggerEvent':
+          final arguments = call.arguments;
+          if (arguments is Map) {
+            await _triggerHandler
+                ?.call(Map<Object?, Object?>.from(arguments));
+          }
         default:
           throw MissingPluginException(
               'unknown hilight/tile_control method ${call.method}');
       }
     });
+  }
+
+  /// Registers the handler for native trigger events. The latest
+  /// registration wins; call once per isolate during startup.
+  void registerTriggerHandler(
+    Future<void> Function(Map<Object?, Object?> arguments)? handler,
+  ) {
+    _triggerHandler = handler;
   }
 
   /// Registers how the platform can stop tile-owned playback (the Quick
