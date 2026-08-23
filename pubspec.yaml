@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.1.0+6
 
 environment:
   sdk: ^3.12.2
@@ -33,6 +33,9 @@ dependencies:
   clock: ^1.1.1
   meta: ^1.16.0
   shared_preferences: ^2.3.2
+  http: ^1.2.2
+  package_info_plus: ^8.1.1
+  url_launcher: ^6.3.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -57,7 +60,15 @@ flutter_launcher_icons:
   ios: false
   adaptive_icon_background: "#000000"
   adaptive_icon_foreground: "assets/icon/hilight_logo.png"
-  adaptive_icon_foreground_inset: 18
+  # Safe zone sized from measurement: the artwork's farthest pixel sits at
+  # 53.6% of source width from center, so rendered radius =
+  # 53.6% x (1 - 2*inset) must stay under the ~30.6% safe-circle radius of
+  # the 108dp adaptive canvas. 24% yields ~27.9% -> fits circle, squircle,
+  # rounded-square masks without clipping while keeping the logo large.
+  adaptive_icon_foreground_inset: 24
+  # Themed (monochrome) icons on Android 13+: system tints the alpha
+  # silhouette, matching every launcher style.
+  adaptive_icon_monochrome: "assets/icon/hilight_logo.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

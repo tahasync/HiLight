@@ -248,7 +248,10 @@ void main() {
       await pumpHome(tester);
 
       final loop = find.text('Loop');
-      await tester.ensureVisible(loop);
+      // The V1.1 presets lengthen the chip row, pushing the repeat control
+      // below the lazily-built viewport range on a phone-sized surface.
+      await tester.scrollUntilVisible(loop, 160);
+      await tester.pumpAndSettle();
       // Nudge further up so the segment is fully clear of the viewport edge
       // (ensureVisible only aligns minimally, which can leave it clipped).
       await tester.drag(find.byType(ListView), const Offset(0, -80));
@@ -320,8 +323,12 @@ void main() {
       // Tap the brightness slider at a low-but-nonzero position before
       // playing, so the animation's peak maps to a low strength level.
       final slider = find.byType(Slider).first;
-      await tester.ensureVisible(slider);
+      // V1.1 presets lengthen the chip row, pushing the controls card below
+      // the lazily-built viewport range on a phone-sized surface; scroll the
+      // list explicitly instead of relying on lazy build extent.
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
       await tester.pumpAndSettle();
+      await tester.ensureVisible(slider);
       final topLeft = tester.getTopLeft(slider);
       final size = tester.getSize(slider);
       await tester.tapAt(Offset(
@@ -330,6 +337,8 @@ void main() {
       ));
       await tester.pumpAndSettle();
 
+      await tester.ensureVisible(find.text('Preview HiLight'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Preview HiLight'));
       await tester.pumpAndSettle();
       expect(levels, isNotEmpty);

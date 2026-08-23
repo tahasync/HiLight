@@ -409,7 +409,7 @@ class _PresetPlaybackCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final preset in kMvpPresets)
+                for (final preset in kBuiltinPresets)
                   OutlinedButton(
                     onPressed:
                         enabled && playingPresetId == null

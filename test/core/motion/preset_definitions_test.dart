@@ -96,9 +96,64 @@ void main() {
     });
   });
 
+  group('V1.1 preset definitions match prd-v1.1.md §2 exactly', () {
+    test('built-in list contains all eight presets in order', () {
+      expect(
+        kBuiltinPresets.map((p) => p.id).toList(),
+        [
+          'pulse',
+          'breathing',
+          'double_pulse',
+          'soft_glow',
+          'heartbeat',
+          'quick_flash',
+          'triple_pulse',
+          'long_glow',
+        ],
+      );
+      expect(builtinPresetById('long_glow'), same(kLongGlowPreset));
+      expect(builtinPresetById('nope'), isNull);
+    });
+
+    test('Quick Flash', () {
+      _expectTable(kQuickFlashPreset, 350, const [
+        (0, 0.00),
+        (60, 1.00),
+        (200, 0.25),
+        (350, 0.00),
+      ]);
+    });
+
+    test('Triple Pulse', () {
+      _expectTable(kTriplePulsePreset, 1050, const [
+        (0, 0.00),
+        (60, 1.00),
+        (150, 0.20),
+        (250, 0.00),
+        (400, 0.00),
+        (460, 1.00),
+        (550, 0.20),
+        (650, 0.00),
+        (800, 0.00),
+        (860, 1.00),
+        (950, 0.20),
+        (1050, 0.00),
+      ]);
+    });
+
+    test('Long Glow', () {
+      _expectTable(kLongGlowPreset, 4800, const [
+        (0, 0.00),
+        (2000, 1.00),
+        (2500, 1.00),
+        (4800, 0.00),
+      ]);
+    });
+  });
+
   group('Preset serialization (PRD §28 schema)', () {
     test('every preset round-trips through JSON', () {
-      for (final preset in kMvpPresets) {
+      for (final preset in kBuiltinPresets) {
         final restored = HilightAnimation.fromJson(preset.toJson());
         expect(restored.id, preset.id, reason: preset.id);
         expect(restored.name, preset.name, reason: preset.id);
@@ -116,9 +171,9 @@ void main() {
   });
 
   group('Presets play through the engine', () {
-    test('each MVP preset completes and ends with the torch off', () {
+    test('each built-in preset completes and ends with the torch off', () {
       fakeAsync((async) {
-        for (final preset in kMvpPresets) {
+        for (final preset in kBuiltinPresets) {
           final output = RecordingOutput();
           final animator = TorchAnimator(output: output);
           var completed = false;
@@ -161,6 +216,32 @@ void main() {
         async.elapse(const Duration(milliseconds: 900));
         // Re-lit for second pulse after the pause.
         expect(output.strengthCalls.last, isNot(0));
+        animator.dispose();
+      });
+    });
+
+    test('Triple Pulse goes fully dark between pulses and re-lights', () {
+      fakeAsync((async) {
+        final output = RecordingOutput();
+        final animator = TorchAnimator(output: output);
+        animator.play(
+          animation: kTriplePulsePreset,
+          maxStrengthLevel: 21,
+          repeatCount: 1,
+        );
+        async.elapse(const Duration(milliseconds: 320));
+        expect(output.turnOffCalls, greaterThanOrEqualTo(1),
+            reason: 'first inter-pulse hold at 250-400ms hit');
+
+        async.elapse(const Duration(milliseconds: 160)); // ~480ms
+        expect(output.strengthCalls.last, isNot(0),
+            reason: 're-lit for second pulse');
+
+        async.elapse(const Duration(milliseconds: 400)); // ~880ms
+        expect(output.turnOffCalls, greaterThanOrEqualTo(2),
+            reason: 'second hold at 650-800ms hit');
+        expect(output.strengthCalls.last, isNot(0),
+            reason: 'third pulse under way');
         animator.dispose();
       });
     });

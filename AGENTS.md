@@ -57,10 +57,22 @@ android/app/src/main/kotlin/.../
 ├── torch/
 │   ├── TorchChannel.kt
 │   ├── TorchController.kt
-│   └── TorchCapability.kt
+│   ├── TorchCapability.kt
+│   ├── TileEngineHost.kt
+│   ├── TileControlChannel (in TileEngineHost.kt)
+│   └── HilightTileService.kt
 ```
 
-`prd.md` is the single source of truth for requirements, numbers, and acceptance criteria. This file is the single source of truth for how to behave while building.
+`prd.md` is the single source of truth for requirements, numbers, and acceptance criteria; `prd-v1.1.md` is the source of truth for every V1.1 number (preset tables, validation limits). This file is the single source of truth for how to behave while building.
+
+## V1.1 Additions (shipped)
+
+- **Three new presets** (Quick Flash / Triple Pulse / Long Glow): defined once in `lib/core/motion/preset_definitions.dart` — `kBuiltinPresets` is the full ordered set; `builtinPresetById` resolves both built-ins and nothing else. Never restate their keyframe numbers elsewhere.
+- **Custom animation editor** (`lib/features/animation_editor/`): validation rules (`custom_animation_validation.dart`, limits 2–20 keyframes, 100–10 000 ms, strictly increasing times, clamp intensity at the editor), `custom_<uuid>` id namespace (`custom_animation_id.dart`, self-rolled v4 — no dependency), storage envelope (`stored_custom_animation.dart` = canonical §28 schema + one `easing`), draft (`custom_animation_draft.dart`), local store (`custom_animation_store.dart`, one JSON list under SharedPreferences key `customAnimations.v1`; malformed entries are skipped, never fatal).
+- **Quick Settings tile**: `HilightTileService` + `TileEngineHost` (Kotlin) share ONE Flutter engine — the Activity's when open, otherwise a headless engine on the `tileMain` entrypoint in `lib/main.dart`. The headless engine is intentionally kept alive for the process lifetime (a second directly-constructed FlutterEngine cannot run Dart reliably — do not "optimize" this back).
+- **`PlaybackCoordinator`** (`lib/services/playback_coordinator.dart`) is the single ownership point for torch playback: HomeController and `TilePlaybackController` both register ownership; every transition is published to Kotlin (`stateChanged`) so the tile mirrors the engine, including natural completion. `main()` must call `WidgetsFlutterBinding.ensureInitialized()` BEFORE `PlaybackCoordinator.instance.attach()` (channel access before the binding crashes startup).
+- **Cached-app freezer safety**: when the QS panel closes (`onStopListening`), Kotlin sends `tileStop`, which cancels only tile-owned playback — a frozen process could otherwise never fire the completion timer and would leave the torch lit.
+- Launcher icon: `adaptive_icon_foreground_inset: 24` in pubspec is sized from measurement (artwork max radius 53.6% of source); changing it risks mask clipping on circular launchers. A monochrome layer is generated for Android 13+ themed icons.
 
 ## Phase Discipline
 

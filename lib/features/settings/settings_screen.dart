@@ -5,15 +5,24 @@ import 'package:flutter/material.dart';
 import '../../core/motion/preset_definitions.dart';
 import '../../core/theme/glass_theme.dart';
 import '../../services/torch_service.dart';
+import '../animation_editor/stored_custom_animation.dart';
 import '../diagnostics/diagnostics_screen.dart';
 import 'app_settings_controller.dart';
 
 /// Settings screen covering PRD §19: appearance, animation defaults,
 /// hardware, and advanced options. Every change persists locally (§24).
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({required this.settings, super.key});
+  const SettingsScreen({
+    required this.settings,
+    this.customAnimations = const [],
+    super.key,
+  });
 
   final AppSettingsController settings;
+
+  /// User-created animations offered alongside built-ins as the default
+  /// preset (prd-v1.1.md §3/§4).
+  final List<StoredCustomAnimation> customAnimations;
 
   @override
   Widget build(BuildContext context) {
@@ -53,10 +62,15 @@ class SettingsScreen extends StatelessWidget {
                         initialSelection: settings.presetId,
                         label: const Text('Default preset'),
                         dropdownMenuEntries: [
-                          for (final preset in kMvpPresets)
+                          for (final preset in kBuiltinPresets)
                             DropdownMenuEntry(
                               value: preset.id,
                               label: preset.name,
+                            ),
+                          for (final custom in customAnimations)
+                            DropdownMenuEntry(
+                              value: custom.id,
+                              label: custom.animation.name,
                             ),
                         ],
                         onSelected: (value) {

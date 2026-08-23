@@ -28,14 +28,18 @@ Works on modern Android phones (Android 13+), including devices **without** adju
 
 | | |
 |---|---|
-| 🎞️ **Five presets** | Pulse · Breathing · Double Pulse · Soft Glow · Heartbeat |
+| 🎞️ **Eight presets** | Pulse · Breathing · Double Pulse · Soft Glow · Heartbeat · Quick Flash · Triple Pulse · Long Glow |
+| 🎨 **Custom animation editor** | Add/remove keyframes (2–20), per-keyframe time & intensity, duration, easing curve — with live preview and editor-side validation |
+| 💾 **Save · rename · delete** | Custom animations persist locally (`custom_<uuid>` namespace) — no account, no cloud |
 | 🎛️ **Controls** | Brightness · Speed (0.25×–3×) · Repeat (Once / 2× / 3× / Loop) |
 | 👁️ **Live preview** | On-screen glow driven by the exact same animation definition as the physical flash, from one shared clock origin |
+| ⚡ **Quick Settings tile** | Start/stop the default animation from the tile — its state mirrors the engine, even after natural completion |
 | 🔍 **Capability detection** | Rear-flash presence, torch availability, adjustable-strength support and maximum level |
 | 🌗 **Graceful fallback** | ON/OFF-only hardware gets simulated smoothness via a 33 Hz duty-cycle carrier with perceptual gamma |
 | 🧠 **Adaptive carrier** | Widens automatically when the camera HAL is slow; native call rate capped |
 | 🛡️ **Safety-first** | Torch force-killed on errors, backgrounding or screen exit; typed structured errors |
 | ⚙️ **Persistence** | Theme and last-used animation settings survive restarts (local-only) |
+| 🔄 **Update checks** | Optional GitHub Releases check with an in-app "Update Available" dialog |
 | 🎨 **Material 3 Expressive** | Restrained liquid-glass surfaces · system / light / dark themes · dynamic color |
 
 ## 📲 Installation
@@ -44,7 +48,8 @@ Grab the latest APK from the [Releases](https://github.com/tahasync/HiLight/rele
 
 ## 🔒 Privacy & permissions
 
-- **100% offline** — no account, no cloud, no analytics, no telemetry
+- Your data never leaves the device — animations and settings are stored **locally only**, no account, no cloud, no analytics, no telemetry
+- The **only** network request is an optional update check against the [GitHub Releases API](https://github.com/tahasync/HiLight/releases); it fails silently offline
 - Requests **no sensitive permissions**: no camera, microphone, location or storage access
 
 Camera2 torch APIs deliberately operate without the CAMERA permission.
@@ -53,7 +58,7 @@ Camera2 torch APIs deliberately operate without the CAMERA permission.
 
 ```bash
 flutter pub get
-flutter test          # 54 tests
+flutter test          # 114 tests
 flutter build apk --release
 ```
 
@@ -71,13 +76,12 @@ Signing material is supplied exclusively via repository secrets — never commit
 | Adjustable torch strength (e.g., recent Pixels) | True variable-brightness animations across the device's level range |
 | ON/OFF-only torch (older devices) | Simulated smoothness via duty-cycle modulation |
 
-Verified across **Pixel 9** (Android 17) and **Pixel 4** (ON/OFF-class). Torch behavior varies by OEM — runtime capability detection, not device model, decides the code path.
+Verified across **Pixel 9** (Android 17, adjustable-strength path) and **Pixel 4** (Android 13, ON/OFF-class) — including the Quick Settings tile and the full custom-animation flow on both. Torch behavior varies by OEM — runtime capability detection, not device model, decides the code path.
 
 ## 🗺️ Roadmap
 
-- Custom animation editor & extra presets
-- Quick Settings tile
 - Notification & charging triggers
+- Per-segment easing, JSON import/export & preset sharing
 - Broader OEM device matrix
 
 See [`CHANGELOG.md`](CHANGELOG.md) for release history.
