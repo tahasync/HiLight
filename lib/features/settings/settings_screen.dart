@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/motion/hilight_animation.dart';
 import '../../core/motion/preset_definitions.dart';
 import '../../core/theme/glass_theme.dart';
+import '../../services/charging_settings.dart';
 import '../../services/notification_access_service.dart';
 import '../../services/notification_trigger_classifier.dart';
 import '../../services/torch_service.dart';
@@ -137,6 +138,8 @@ class SettingsScreen extends StatelessWidget {
               ),
               const _SectionHeader('Triggers'),
               _TriggersSection(settings: settings, customAnimations: customAnimations),
+              const _SectionHeader('Charging'),
+              _ChargingSection(settings: settings, customAnimations: customAnimations),
               const _SectionHeader('Hardware'),
               GlassSurface(
                 blur: false,
@@ -568,6 +571,193 @@ class _AppOverridesEntry extends StatelessWidget {
           builder: (_) =>
               AppOverridesScreen(presets: presets),
         ),
+      ),
+    );
+  }
+}
+
+/// Charging effects section (prd-v1.2.md §4, amended spec): master toggle,
+/// connect/disconnect animations, and five battery-milestone presets — all
+/// independent, no periodic animation while charging.
+class _ChargingSection extends StatelessWidget {
+  const _ChargingSection({
+    required this.settings,
+    required this.customAnimations,
+  });
+
+  final AppSettingsController settings;
+  final List<StoredCustomAnimation> customAnimations;
+
+  List<HilightAnimation> _presets() => [
+        ...kBuiltinPresets,
+        for (final custom in customAnimations) custom.animation,
+      ];
+
+  @override
+  Widget build(BuildContext context) {
+    final config = settings.chargingConfig;
+    final presets = _presets();
+    String? presetName(String id) {
+      for (final preset in presets) {
+        if (preset.id == id) return preset.name;
+      }
+      return null;
+    }
+
+    return GlassSurface(
+      blur: false,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            title: const Text('Charging effects'),
+            subtitle:
+                const Text('Master switch — everything below is off until '
+                    'this is on'),
+            value: config.masterEnabled,
+            onChanged: settings.setChargingMaster,
+          ),
+          if (config.masterEnabled) ...[
+            const Divider(height: 1),
+            SwitchListTile(
+              contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              title: const Text('Animate on charger connect'),
+              value: config.animateOnConnect,
+              onChanged: settings.setChargingConnectEnabled,
+            ),
+            if (config.animateOnConnect)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: DropdownMenu<String>(
+                  expandedInsets: EdgeInsets.zero,
+                  initialSelection: presetName(config.connectPresetId) != null
+                      ? config.connectPresetId
+                      : null,
+                  label: const Text('Connect preset'),
+                  dropdownMenuEntries: [
+                    for (final preset in presets)
+                      DropdownMenuEntry(
+                          value: preset.id, label: preset.name),
+                  ],
+                  onSelected: (value) {
+                    if (value != null) {
+                      settings.setChargingConnectPreset(value);
+                    }
+                  },
+                ),
+              ),
+            SwitchListTile(
+              contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              title: const Text('Animate on charger disconnect'),
+              subtitle: const Text(
+                  'Any charging animation stops instantly first'),
+              value: config.animateOnDisconnect,
+              onChanged: settings.setChargingDisconnectEnabled,
+            ),
+            if (config.animateOnDisconnect)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: DropdownMenu<String>(
+                  expandedInsets: EdgeInsets.zero,
+                  initialSelection:
+                      presetName(config.disconnectPresetId) != null
+                          ? config.disconnectPresetId
+                          : null,
+                  label: const Text('Disconnect preset'),
+                  dropdownMenuEntries: [
+                    for (final preset in presets)
+                      DropdownMenuEntry(
+                          value: preset.id, label: preset.name),
+                  ],
+                  onSelected: (value) {
+                    if (value != null) {
+                      settings.setChargingDisconnectPreset(value);
+                    }
+                  },
+                ),
+              ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(
+                'Battery milestones — fire once per charging session when '
+                'the level crosses upward:',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+            ),
+            for (final level in kChargingMilestoneLevels)
+              _MilestoneTile(
+                level: level,
+                config: config.milestoneAt(level),
+                presets: presets,
+                onToggle: (value) => settings.setMilestoneEnabled(
+                    level, value),
+                onPresetSelected: (id) =>
+                    settings.setMilestonePreset(level, id),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MilestoneTile extends StatelessWidget {
+  const _MilestoneTile({
+    required this.level,
+    required this.config,
+    required this.presets,
+    required this.onToggle,
+    required this.onPresetSelected,
+  });
+
+  final int level;
+  final MilestoneConfig config;
+  final List<HilightAnimation> presets;
+  final ValueChanged<bool> onToggle;
+  final ValueChanged<String> onPresetSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    String? presetName(String id) {
+      for (final preset in presets) {
+        if (preset.id == id) return preset.name;
+      }
+      return null;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 52,
+            child: Text('$level%',
+                style: Theme.of(context).textTheme.bodyLarge),
+          ),
+          Expanded(
+            child: DropdownMenu<String>(
+              expandedInsets: EdgeInsets.zero,
+              initialSelection: presetName(config.presetId) != null
+                  ? config.presetId
+                  : null,
+              enabled: config.enabled,
+              label: const Text('Preset'),
+              dropdownMenuEntries: [
+                for (final preset in presets)
+                  DropdownMenuEntry(value: preset.id, label: preset.name),
+              ],
+              onSelected: (value) {
+                if (value != null) onPresetSelected(value);
+              },
+            ),
+          ),
+          Switch(value: config.enabled, onChanged: onToggle),
+        ],
       ),
     );
   }

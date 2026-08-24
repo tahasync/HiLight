@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/charging_settings.dart';
 import '../../services/notification_trigger_classifier.dart';
 import '../../services/preferences_service.dart';
 import '../../services/trigger_settings.dart';
@@ -33,6 +34,9 @@ class AppSettingsController extends ChangeNotifier {
   /// completes; every entry defaults to disabled.
   Map<TriggerKind, TriggerConfig> triggerConfig = const {};
 
+  /// Charging-effect configuration (prd-v1.2.md §4, amended spec).
+  ChargingConfig chargingConfig = defaultChargingConfig();
+
   Future<void> load() async {
     final snapshot = await _prefs.loadAll();
     themeMode = switch (snapshot.themeModeName) {
@@ -48,6 +52,7 @@ class AppSettingsController extends ChangeNotifier {
     updateRateMs = snapshot.updateRateMs;
     debugLogging = snapshot.debugLogging;
     triggerConfig = await _prefs.loadTriggerConfig();
+    chargingConfig = await _prefs.loadChargingConfig();
     notifyListeners();
   }
 
@@ -128,6 +133,79 @@ class AppSettingsController extends ChangeNotifier {
     };
     notifyListeners();
     _prefs.setTriggerPresetId(kind, presetId);
+  }
+
+  /// Charging-effect setters (prd-v1.2.md §4, amended spec). Each change
+  /// notifies listeners and persists immediately.
+  void setChargingMaster(bool value) {
+    if (chargingConfig.masterEnabled == value) return;
+    chargingConfig = chargingConfig.copyWith(masterEnabled: value);
+    notifyListeners();
+    _prefs.setChargingMaster(value);
+  }
+
+  void setChargingConnectEnabled(bool value) {
+    if (chargingConfig.animateOnConnect == value) return;
+    chargingConfig = chargingConfig.copyWith(animateOnConnect: value);
+    notifyListeners();
+    _prefs.setChargingConnectEnabled(value);
+  }
+
+  void setChargingConnectPreset(String id) {
+    if (chargingConfig.connectPresetId == id) return;
+    chargingConfig = chargingConfig.copyWith(connectPresetId: id);
+    notifyListeners();
+    _prefs.setChargingConnectPreset(id);
+  }
+
+  void setChargingDisconnectEnabled(bool value) {
+    if (chargingConfig.animateOnDisconnect == value) return;
+    chargingConfig = chargingConfig.copyWith(animateOnDisconnect: value);
+    notifyListeners();
+    _prefs.setChargingDisconnectEnabled(value);
+  }
+
+  void setChargingDisconnectPreset(String id) {
+    if (chargingConfig.disconnectPresetId == id) return;
+    chargingConfig = chargingConfig.copyWith(disconnectPresetId: id);
+    notifyListeners();
+    _prefs.setChargingDisconnectPreset(id);
+  }
+
+  void setMilestoneEnabled(int level, bool value) {
+    final current = chargingConfig.milestoneAt(level);
+    if (current.enabled == value) return;
+    chargingConfig = ChargingConfig(
+      masterEnabled: chargingConfig.masterEnabled,
+      animateOnConnect: chargingConfig.animateOnConnect,
+      connectPresetId: chargingConfig.connectPresetId,
+      animateOnDisconnect: chargingConfig.animateOnDisconnect,
+      disconnectPresetId: chargingConfig.disconnectPresetId,
+      milestones: {
+        ...chargingConfig.milestones,
+        level: current.copyWith(enabled: value),
+      },
+    );
+    notifyListeners();
+    _prefs.setMilestoneEnabled(level, value);
+  }
+
+  void setMilestonePreset(int level, String id) {
+    final current = chargingConfig.milestoneAt(level);
+    if (current.presetId == id) return;
+    chargingConfig = ChargingConfig(
+      masterEnabled: chargingConfig.masterEnabled,
+      animateOnConnect: chargingConfig.animateOnConnect,
+      connectPresetId: chargingConfig.connectPresetId,
+      animateOnDisconnect: chargingConfig.animateOnDisconnect,
+      disconnectPresetId: chargingConfig.disconnectPresetId,
+      milestones: {
+        ...chargingConfig.milestones,
+        level: current.copyWith(presetId: id),
+      },
+    );
+    notifyListeners();
+    _prefs.setMilestonePreset(level, id);
   }
 
   /// Restores every setting to its default and clears stored values.

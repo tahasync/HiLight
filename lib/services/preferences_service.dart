@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'charging_settings.dart';
 import 'notification_trigger_classifier.dart';
 import 'trigger_settings.dart';
 
@@ -102,6 +103,61 @@ class PreferencesService {
   static String _triggerEnabledKey(TriggerKind kind) => 'trigger.${kind.name}.enabled';
 
   static String _triggerPresetKey(TriggerKind kind) => 'trigger.${kind.name}.presetId';
+
+  /// Loads charging-effect configuration (prd-v1.2.md §4, amended spec).
+  /// Everything defaults to disabled.
+  Future<ChargingConfig> loadChargingConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    final defaults = defaultChargingConfig();
+    return ChargingConfig(
+      masterEnabled:
+          prefs.getBool('charging.enabled') ?? defaults.masterEnabled,
+      animateOnConnect: prefs.getBool('charging.connect.enabled') ??
+          defaults.animateOnConnect,
+      connectPresetId: prefs.getString('charging.connect.presetId') ??
+          defaults.connectPresetId,
+      animateOnDisconnect: prefs.getBool('charging.disconnect.enabled') ??
+          defaults.animateOnDisconnect,
+      disconnectPresetId: prefs.getString('charging.disconnect.presetId') ??
+          defaults.disconnectPresetId,
+      milestones: {
+        for (final level in kChargingMilestoneLevels)
+          level: MilestoneConfig(
+            enabled: prefs.getBool('charging.milestone.$level.enabled') ??
+                defaults.milestoneAt(level).enabled,
+            presetId: prefs.getString('charging.milestone.$level.presetId') ??
+                defaults.milestoneAt(level).presetId,
+          ),
+      },
+    );
+  }
+
+  Future<void> setChargingMaster(bool value) async =>
+      (await SharedPreferences.getInstance()).setBool('charging.enabled', value);
+
+  Future<void> setChargingConnectEnabled(bool value) async =>
+      (await SharedPreferences.getInstance())
+          .setBool('charging.connect.enabled', value);
+
+  Future<void> setChargingConnectPreset(String id) async =>
+      (await SharedPreferences.getInstance())
+          .setString('charging.connect.presetId', id);
+
+  Future<void> setChargingDisconnectEnabled(bool value) async =>
+      (await SharedPreferences.getInstance())
+          .setBool('charging.disconnect.enabled', value);
+
+  Future<void> setChargingDisconnectPreset(String id) async =>
+      (await SharedPreferences.getInstance())
+          .setString('charging.disconnect.presetId', id);
+
+  Future<void> setMilestoneEnabled(int level, bool value) async =>
+      (await SharedPreferences.getInstance())
+          .setBool('charging.milestone.$level.enabled', value);
+
+  Future<void> setMilestonePreset(int level, String id) async =>
+      (await SharedPreferences.getInstance())
+          .setString('charging.milestone.$level.presetId', id);
 
   Future<void> clear() async => (await SharedPreferences.getInstance()).clear();
 }

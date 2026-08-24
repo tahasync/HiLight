@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app/hilight_app.dart';
+import 'services/charging_playback_controller.dart';
 import 'services/playback_coordinator.dart';
 import 'services/tile_playback_controller.dart';
 import 'services/trigger_playback_controller.dart';
@@ -14,8 +15,10 @@ void main() {
     // the app is open, through this same engine (prd-v1.1.md §4).
     PlaybackCoordinator.instance.attach();
     TilePlaybackController().register();
-    // Trigger effects (prd-v1.2.md §2) ride the same engine + channel.
+    // Trigger effects (prd-v1.2.md §2) and charging effects (§4) ride the
+    // same engine + channel.
     TriggerPlaybackController().register();
+    ChargingPlaybackController().register();
     runApp(const HilightApp());
   }, (error, stackTrace) {
     FlutterError.presentError(FlutterErrorDetails(
@@ -35,6 +38,7 @@ void tileMain() {
     PlaybackCoordinator.instance.attach();
     TilePlaybackController().register();
     TriggerPlaybackController().register();
+    ChargingPlaybackController().register();
     // Publish the initial idle state once the platform side is listening.
     Future<void>.delayed(const Duration(milliseconds: 100), () {
       PlaybackCoordinator.instance.refreshState();

@@ -28,6 +28,9 @@ class PlaybackCoordinator {
   /// decision logic; the coordinator only forwards the raw arguments map.
   Future<void> Function(Map<Object?, Object?> arguments)? _triggerHandler;
 
+  /// Inbound charging events (connected / disconnected / level).
+  Future<void> Function(Map<Object?, Object?> arguments)? _chargingHandler;
+
   /// Idempotent; installs the inbound handler for tile requests.
   void attach() {
     if (_attached) return;
@@ -46,6 +49,12 @@ class PlaybackCoordinator {
             await _triggerHandler
                 ?.call(Map<Object?, Object?>.from(arguments));
           }
+        case 'chargingEvent':
+          final arguments = call.arguments;
+          if (arguments is Map) {
+            await _chargingHandler
+                ?.call(Map<Object?, Object?>.from(arguments));
+          }
         default:
           throw MissingPluginException(
               'unknown hilight/tile_control method ${call.method}');
@@ -59,6 +68,13 @@ class PlaybackCoordinator {
     Future<void> Function(Map<Object?, Object?> arguments)? handler,
   ) {
     _triggerHandler = handler;
+  }
+
+  /// Registers the handler for native charging events (§4).
+  void registerChargingHandler(
+    Future<void> Function(Map<Object?, Object?> arguments)? handler,
+  ) {
+    _chargingHandler = handler;
   }
 
   /// Registers how the platform can stop tile-owned playback (the Quick
