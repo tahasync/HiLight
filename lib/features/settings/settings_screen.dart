@@ -106,7 +106,7 @@ class SettingsScreen extends StatelessWidget {
                       Row(
                         children: [
                           const Expanded(child: Text('Default speed')),
-                          Text('${settings.speed.toStringAsFixed(2)}Ã—'),
+                          Text('${settings.speed.toStringAsFixed(2)}—'),
                         ],
                       ),
                       Slider(
@@ -125,8 +125,8 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         segments: const [
                           ButtonSegment(value: 1, label: Text('Once')),
-                          ButtonSegment(value: 2, label: Text('2Ã—')),
-                          ButtonSegment(value: 3, label: Text('3Ã—')),
+                          ButtonSegment(value: 2, label: Text('2×')),
+                          ButtonSegment(value: 3, label: Text('3×')),
                           ButtonSegment(value: 0, label: Text('Loop')),
                         ],
                         selected: {settings.repeatCount},
