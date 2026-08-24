@@ -11,7 +11,7 @@ import '../../services/contact_override_store.dart';
 /// incoming-call preset.
 ///
 /// Permissions discipline: READ_CONTACTS is requested only when the user
-/// taps "Add contact" â€” an explanation dialog precedes the system runtime
+/// taps "Add contact" — an explanation dialog precedes the system runtime
 /// dialog, and the Contacts picker opens only after a grant.
 class ContactOverridesScreen extends StatefulWidget {
   const ContactOverridesScreen({required this.presets, super.key});
@@ -54,7 +54,7 @@ class _ContactOverridesScreenState extends State<ContactOverridesScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      // 1. Explain why (prd.md Â§23), then ask â€” only now.
+      // 1. Explain why (prd.md Â§23), then ask — only now.
       final proceed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
@@ -78,7 +78,7 @@ class _ContactOverridesScreenState extends State<ContactOverridesScreen> {
       );
       if (proceed != true) return;
 
-      // 2. Runtime permission request â€” the exact enable moment.
+      // 2. Runtime permission request — the exact enable moment.
       final granted =
           await _contacts.invokeMethod<bool>('requestReadContacts') ?? false;
       if (!granted || !mounted) {

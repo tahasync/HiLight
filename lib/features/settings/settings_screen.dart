@@ -301,7 +301,7 @@ class _SectionHeader extends StatelessWidget {
 /// trigger type.
 ///
 /// Permissions discipline: listener access is only ever *requested* from
-/// inside the enable flow â€” when the user flips a trigger on without
+/// inside the enable flow — when the user flips a trigger on without
 /// access. An explanation dialog precedes the hand-off to system settings,
 /// and a granted return completes the pending enable automatically.
 class _TriggersSection extends StatefulWidget {
@@ -373,7 +373,7 @@ class _TriggersSectionState extends State<_TriggersSection>
         title: const Text('Notification access needed'),
         content: const Text(
           'To flash on this event, Android requires notification access. '
-          'HiLight never reads or stores message text or sender details â€” '
+          'HiLight never reads or stores message text or sender details — '
           'it only reacts to notification events.',
         ),
         actions: [
@@ -413,7 +413,7 @@ class _TriggersSectionState extends State<_TriggersSection>
             subtitle: Text(_granted
                 ? 'Granted'
                 : (_pendingEnable != null
-                    ? 'Not granted â€” waiting for accessâ€¦'
+                    ? 'Not granted — waiting for accessâ€¦'
                     : 'Not granted')),
             trailing: IconButton(
               tooltip: 'Open Android notification settings',
@@ -429,7 +429,7 @@ class _TriggersSectionState extends State<_TriggersSection>
             child: Text(
               'Triggers rely on Android\'s notification listener. Doze mode, '
               'battery optimization, or aggressive OEM battery managers can '
-              'delay or suppress them â€” and some clock apps label timers as '
+              'delay or suppress them — and some clock apps label timers as '
               'alarms.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -490,10 +490,10 @@ class _TriggerTile extends StatelessWidget {
         TriggerKind.incomingCall =>
           'Flash on call notifications while the screen is off',
         TriggerKind.sms =>
-          'Flash for SMS/MMS from your messaging app â€” chat apps like '
+          'Flash for SMS/MMS from your messaging app — chat apps like '
               'WhatsApp count as App notifications',
         TriggerKind.alarm =>
-          'Alarm notifications â€” Android labels many clock-app timers this way too',
+          'Alarm notifications — Android labels many clock-app timers this way too',
         TriggerKind.timer =>
           'Timer notifications where the clock app distinguishes them',
         TriggerKind.appNotification =>
@@ -605,7 +605,7 @@ class _AppOverridesEntry extends StatelessWidget {
 }
 
 /// Charging effects section (prd-v1.2.md Â§4, amended spec): master toggle,
-/// connect/disconnect animations, and five battery-milestone presets â€” all
+/// connect/disconnect animations, and five battery-milestone presets — all
 /// independent, no periodic animation while charging.
 class _ChargingSection extends StatelessWidget {
   const _ChargingSection({
@@ -641,7 +641,7 @@ class _ChargingSection extends StatelessWidget {
             contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             title: const Text('Charging effects'),
             subtitle:
-                const Text('Master switch â€” everything below is off until '
+                const Text('Master switch — everything below is off until '
                     'this is on'),
             value: config.masterEnabled,
             onChanged: (value) {
@@ -720,7 +720,7 @@ class _ChargingSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Text(
-                'Battery milestones â€” fire once per charging session when '
+                'Battery milestones — fire once per charging session when '
                 'the level crosses upward:',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
