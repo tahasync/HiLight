@@ -61,17 +61,6 @@
                 <action android:name="android.service.notification.NotificationListenerService"/>
             </intent-filter>
         </service>
-        <!-- Charging triggers (prd-v1.2.md §4): POWER_CONNECTED/DISCONNECTED
-             are protected system broadcasts exempt from the implicit-broadcast
-             ban; no permission required. All decisions happen in Dart. -->
-        <receiver
-            android:name=".torch.ChargingReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.ACTION_POWER_CONNECTED"/>
-                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED"/>
-            </intent-filter>
-        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

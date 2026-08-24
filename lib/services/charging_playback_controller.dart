@@ -135,6 +135,8 @@ class ChargingPlaybackController {
       return;
     }
     final capability = await _capabilities();
+    _debugLog('charging $label: capability='
+        '${capability == null ? "null" : (capability.torchAvailable ? "ok" : "no-torch")}');
     if (capability == null || !capability.torchAvailable) return;
 
     var animation = builtinPresetById(presetId) ?? kPulsePreset;

@@ -27,6 +27,23 @@ import android.service.notification.StatusBarNotification
  */
 class HilightNotificationListenerService : NotificationListenerService() {
 
+    override fun onCreate() {
+        super.onCreate()
+        // The listener is bound while notification access is granted, making
+        // this service the long-lived host for the charging bridge.
+        ChargingBridge.register(this)
+    }
+
+    override fun onDestroy() {
+        ChargingBridge.unregister(this)
+        super.onDestroy()
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        ChargingBridge.register(this)
+    }
+
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         super.onNotificationRemoved(sbn)
         if (sbn == null) return
