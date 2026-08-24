@@ -34,6 +34,7 @@ Works on modern Android phones (Android 13+), including devices **without** adju
 | :bell: **Notification triggers** | Flash on incoming calls (repeats while ringing, stops on answer), SMS, alarms, timers or app notifications — each mapped to any preset |
 | :bust_in_silhouette: **Per-contact patterns** | Assign a preset to specific people — their calls flash differently from everyone else's |
 | :iphone: **Per-app control** | Enable, disable, or re-style flashing for every installed app individually |
+| :battery: **Charging effects** | Animate on charger connect and disconnect, plus battery-milestone presets at 20 / 35 / 50 / 70 / 100 % — once per session, fully independent |
 | 🎛️ **Controls** | Brightness · Speed (0.25×–3×) · Repeat (Once / 2× / 3× / Loop) |
 | 👁️ **Live preview** | On-screen glow driven by the exact same animation definition as the physical flash, from one shared clock origin |
 | ⚡ **Quick Settings tile** | Start/stop the default animation from the tile — its state mirrors the engine, even after natural completion |

@@ -3,7 +3,38 @@
 All notable changes to HiLight are documented here.
 Format based on Keep a Changelog; versioning follows SemVer.
 
+## v1.2.0 — Charging effects, full-app haptics, performance pass
+
+Completes the V1.2 milestone, verified live on Pixel 9 (Android 17) and Pixel 4 (Android 16).
+
+### Added
+- **Charging effects**: animate on charger connect and disconnect (each with its own preset), plus five battery-milestone presets (20 / 35 / 50 / 70 / 100 %) that fire once per charging session when the level crosses upward — plug-in level consumes lower thresholds silently. Master toggle gates everything; every control is independent; **no periodic animation while charging** (product decision replacing the prd-v1.2.md §4 repeat model).
+- **Charging delivery that actually works**: runtime-registered broadcast bridge (manifest receivers for power events get zero delivery on Android 16/17), sticky-intent level reads, host-counted registration shared between the notification listener and the app, and a 4 s polling fallback with 5 s connect dedupe for ROMs that drop power broadcasts entirely (Pixel 4 custom ROM).
+- **Full-app haptics**: tiered feedback — medium for play/stop/save/delete/reset, light for every switch and slider commit, selection ticks for pickers — gated by the existing haptics toggle (the MVP only buzzed preset-select, imperceptibly).
+- Disconnect safety: any charging-owned animation is killed instantly and unconditionally on unplug *before* the optional disconnect animation; manual previews are never interrupted.
+
+### Fixed
+- **Update dialog never fired**: `showUpdateDialog` was called with a context above the navigator — the throw was silently swallowed. Routed through a `GlobalKey<NavigatorState>`; verified live (1.1.0 → v1.1.5 prompt on Pixel 4).
+- **Concurrent-trigger restarts**: near-simultaneous notifications could both pass the busy-check and restart the torch mid-animation; start gating is now atomic (regression-tested).
+- Launcher icon: full-bleed foreground at a measured inset — complete logo, no dead padding, no mask cropping.
+- Text encoding repairs (2×/3×/speed labels, em-dashes) across settings.
+
+### Changed
+- **Performance pass**: removed the per-frame GPU backdrop blur from every card — scrolling is now fluid on all screens; glass look retained via tint + hairline border.
+- Long-pressing a built-in preset opens the editor as an editable copy; customs edit in place.
+- Dead code removed; `flutter analyze` clean.
+
+### Testing
+- 184 passing unit/widget tests (up from 169): charging milestone bookkeeping, controller flows (connect / milestone-once / disconnect-kill / manual-preview safety), polling fallback dedupe, coordinator routing.
+
+## v1.1.7 — Update dialog fix
+
+### Fixed
+- The "Update Available" dialog never appeared on device: `showUpdateDialog` received the root widget's context (above the navigator), threw, and the silent catch hid it. Now pushed via a navigator `GlobalKey` — verified live prompting 1.1.0 → v1.1.5.
 ## v1.1.5 — Notification triggers, per-contact & per-app patterns
+
+
+
 
 First slice of the V1.2 milestone, verified live on Pixel 9 (Android 17) and Pixel 4 (Android 16).
 
