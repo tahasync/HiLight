@@ -769,43 +769,47 @@ class _MilestoneTile extends StatelessWidget {
       return null;
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 2, 8, 2),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 52,
-            child: Text('$level%',
-                style: Theme.of(context).textTheme.bodyLarge),
-          ),
-          Expanded(
-            child: DropdownMenu<String>(
-              expandedInsets: EdgeInsets.zero,
-              initialSelection: presetName(config.presetId) != null
-                  ? config.presetId
-                  : null,
-              enabled: config.enabled,
-              label: const Text('Preset'),
-              dropdownMenuEntries: [
-                for (final preset in presets)
-                  DropdownMenuEntry(value: preset.id, label: preset.name),
-              ],
-              onSelected: (value) {
-                if (value != null) {
-                  Haptics.selection();
-                  onPresetSelected(value);
-                }
-              },
+    Future<void> pickPreset() async {
+      final selected = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => SimpleDialog(
+          title: Text('Preset for $level%'),
+          children: [
+            RadioGroup<String>(
+              groupValue: config.presetId,
+              onChanged: (value) =>
+                  Navigator.of(dialogContext).pop(value),
+              child: Column(
+                children: [
+                  for (final preset in presets)
+                    RadioListTile<String>(
+                      value: preset.id,
+                      title: Text(preset.name),
+                    ),
+                ],
+              ),
             ),
-          ),
-          Switch(
-              value: config.enabled,
-              onChanged: (value) {
-                Haptics.light();
-                onToggle(value);
-              }),
-        ],
+          ],
+        ),
+      );
+      if (selected != null) onPresetSelected(selected);
+    }
+
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+      title: Text('$level% milestone'),
+      subtitle: Text(presetName(config.presetId) ?? 'Pulse'),
+      trailing: Switch(
+        value: config.enabled,
+        onChanged: (value) {
+          Haptics.light();
+          onToggle(value);
+        },
       ),
+      onTap: config.enabled ? () async {
+        Haptics.selection();
+        await pickPreset();
+      } : null,
     );
   }
 }

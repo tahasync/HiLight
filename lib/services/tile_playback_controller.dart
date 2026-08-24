@@ -50,11 +50,6 @@ class TilePlaybackController {
     });
   }
 
-  /// Stops playback only when this controller owns it (tile-triggered
-  /// animation), leaving app-owned playback untouched.
-  Future<void> stopIfActive() =>
-      PlaybackCoordinator.instance.requestStop(_token);
-
   Future<void> toggle() async {
     if (PlaybackCoordinator.instance.isActive) return; // stop hook handles it
     await _startDefault();

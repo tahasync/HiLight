@@ -254,10 +254,6 @@ class TriggerPlaybackController {
     _ringLoopStartedAt = null;
   }
 
-  /// Stops trigger-owned playback only (used by safety paths).
-  Future<void> stopIfActive() =>
-      PlaybackCoordinator.instance.requestStop(_token);
-
   /// Precedence (prd-v1.2.md §3): per-contact override first (calls only),
   /// then the per-app preset, then the generic per-trigger-type preset.
   Future<String> _resolvePresetId(

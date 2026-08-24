@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 
 /// Liquid-glass design tokens (PRD §16). These are the final numbers — every
@@ -22,17 +20,17 @@ abstract final class GlassTokens {
 }
 
 /// A restrained liquid-glass surface: translucent tinted fill, hairline
-/// border, optional background blur. No elevation — depth comes from blur
-/// and border alone (PRD §16).
+/// border. No elevation — depth comes from fill and border alone (PRD §16).
 ///
-/// Use [blur] sparingly: enable it only where animated or colorful content
-/// actually sits behind the surface; flat backgrounds gain little from the
-/// filter's GPU cost.
+/// BackdropFilter blur is deliberately OFF everywhere: measured jank on
+/// every scrollable surface (each frame paid a full-area GPU blur). The
+/// [blur] flag remains for API compatibility but is ignored — revisit only
+/// with a static, non-scrolling backdrop.
 class GlassSurface extends StatelessWidget {
   const GlassSurface({
     required this.child,
     this.borderRadius = GlassTokens.controlRadius,
-    this.blur = true,
+    this.blur = false,
     this.padding,
     super.key,
   });
@@ -66,16 +64,6 @@ class GlassSurface extends StatelessWidget {
         child: child,
       ),
     );
-    if (!blur) return surface;
-    return ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(
-          sigmaX: GlassTokens.blurSigma,
-          sigmaY: GlassTokens.blurSigma,
-        ),
-        child: surface,
-      ),
-    );
+    return surface;
   }
 }
