@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 import '../core/motion/easing.dart';
 import '../core/motion/preset_definitions.dart';
@@ -56,9 +59,58 @@ class ChargingPlaybackController {
   int _connectLevel = 0;
   Set<int> _consumed = <int>{};
 
+  /// Dedupe for delayed duplicate connect events (a ROM may deliver the
+  /// broadcast seconds after the poll already handled the transition).
+  static DateTime? _lastConnectedAt;
+
+  /// Polling fallback (per-isolate): some ROMs (Pixel 4 custom Android 16)
+  /// never deliver power broadcasts, so while any engine lives we diff a
+  /// cheap sticky-battery snapshot every [_pollInterval]. Broadcast events
+  /// update the same last-state, so healthy devices never double-fire.
+  static const MethodChannel _supportChannel =
+      MethodChannel('hilight/trigger_support');
+  static const Duration _pollInterval = Duration(seconds: 4);
+  static Timer? _pollTimer;
+  static bool? _lastCharging;
+  static int? _lastLevel;
+
+  void _startPolling() {
+    if (_pollTimer != null) return;
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _pollTick());
+  }
+
+  Future<void> _pollTick() async {
+    final snapshot = await _readSnapshot();
+    if (snapshot == null) return;
+    final charging = snapshot['charging'] == true;
+    final level = snapshot['level'] as int? ?? -1;
+    final lastCharging = _lastCharging;
+    final lastLevel = _lastLevel;
+    _lastCharging = charging;
+    _lastLevel = level;
+    if (lastCharging == null) return; // first tick: baseline only
+    if (charging && !lastCharging) {
+      await handleEvent({'event': 'connected', 'level': level});
+    } else if (!charging && lastCharging) {
+      await handleEvent({'event': 'disconnected'});
+    } else if (charging && level != lastLevel && level >= 0) {
+      await handleEvent({'event': 'level', 'level': level});
+    }
+  }
+
+  Future<Map<Object?, Object?>?> _readSnapshot() async {
+    try {
+      return await _supportChannel
+          .invokeMethod<Map<Object?, Object?>>('chargingSnapshot');
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Registers as the coordinator's charging handler; call once per isolate.
   void register() {
     PlaybackCoordinator.instance.registerChargingHandler(handleEvent);
+    _startPolling();
   }
 
   /// Entry point for native charging events. Public for tests.
@@ -66,6 +118,16 @@ class ChargingPlaybackController {
     final event = arguments['event'];
     if (event is! String) return;
     final level = arguments['level'];
+    // Keep the polling fallback's last-state in sync so healthy devices
+    // never double-fire a transition the broadcast already delivered.
+    switch (event) {
+      case 'connected':
+        _lastCharging = true;
+      case 'disconnected':
+        _lastCharging = false;
+      case 'level':
+        if (level is int) _lastLevel = level;
+    }
     switch (event) {
       case 'connected':
         await _onConnected(level is int ? level : -1);
@@ -82,6 +144,14 @@ class ChargingPlaybackController {
       _sessionActive = false;
       return;
     }
+    final now = DateTime.now();
+    final lastConnected = _lastConnectedAt;
+    if (lastConnected != null &&
+        now.difference(lastConnected) < const Duration(seconds: 5)) {
+      _debugLog('duplicate connect ignored');
+      return;
+    }
+    _lastConnectedAt = now;
     _sessionActive = true;
     _connectLevel = level;
     _consumed = ChargingMilestones.consumedAtConnect(level);

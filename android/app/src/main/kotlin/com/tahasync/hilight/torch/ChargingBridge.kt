@@ -32,9 +32,21 @@ object ChargingBridge {
     @Volatile
     private var receiver: BroadcastReceiver? = null
 
+    /**
+     * Multiple hosts share one receiver (NLS + Activity). Unregistering must
+     * only happen when the LAST host goes away — otherwise closing the app
+     * kills the listener-hosted registration (observed live).
+     */
+    private var hostCount = 0
+
+    @Volatile
+    private var registered = false
+
     @Synchronized
     fun register(context: Context) {
-        if (receiver != null) return
+        hostCount++
+        android.util.Log.d(TAG, "register hostCount=$hostCount registered=$registered")
+        if (registered) return
         val appContext = context.applicationContext
         val bridge = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
@@ -69,6 +81,7 @@ object ChargingBridge {
             }
         }
         receiver = bridge
+        registered = true
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
@@ -89,7 +102,10 @@ object ChargingBridge {
 
     @Synchronized
     fun unregister(context: Context) {
+        if (hostCount > 0) hostCount--
+        if (hostCount > 0 || !registered) return
         val bridge = receiver ?: return
+        registered = false
         receiver = null
         try {
             context.applicationContext.unregisterReceiver(bridge)
