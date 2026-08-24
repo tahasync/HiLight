@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/haptics.dart';
 import '../../services/charging_settings.dart';
 import '../../services/notification_trigger_classifier.dart';
 import '../../services/preferences_service.dart';
@@ -53,6 +54,7 @@ class AppSettingsController extends ChangeNotifier {
     debugLogging = snapshot.debugLogging;
     triggerConfig = await _prefs.loadTriggerConfig();
     chargingConfig = await _prefs.loadChargingConfig();
+    Haptics.enabled = hapticsEnabled;
     notifyListeners();
   }
 
@@ -90,6 +92,7 @@ class AppSettingsController extends ChangeNotifier {
 
   void setHapticsEnabled(bool enabled) {
     hapticsEnabled = enabled;
+    Haptics.enabled = enabled;
     notifyListeners();
     _prefs.setHapticsEnabled(enabled);
   }

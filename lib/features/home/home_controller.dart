@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../core/haptics.dart';
 import '../../core/motion/easing.dart';
 import '../../core/motion/hilight_animation.dart';
 import '../../core/motion/preset_definitions.dart';
@@ -185,7 +185,7 @@ class HomeController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Haptic confirmation after a slider gesture finishes (not per tick).
-  void commitControlAdjustment() => _hapticFeedback();
+  void commitControlAdjustment() => Haptics.light();
 
   void setSpeed(double value) {
     speed = value.clamp(0.25, 3.0);
@@ -203,14 +203,14 @@ class HomeController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _hapticFeedback() {
-    if (!_settings.hapticsEnabled) return;
-    HapticFeedback.selectionClick();
+    Haptics.selection();
   }
 
   /// Starts or stops the preview: the physical torch plays through the
   /// animation engine while the visual mirrors the same definition.
   void togglePreview() {
     if (!canPlay) return;
+    Haptics.medium();
     if (isPlaying) {
       _stopPlayback();
       notifyListeners();

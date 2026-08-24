@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../core/haptics.dart';
 import '../../core/motion/hilight_animation.dart';
 import '../../core/motion/preset_definitions.dart';
 import '../../core/theme/glass_theme.dart';
@@ -16,9 +17,9 @@ import 'app_overrides_screen.dart';
 import 'app_settings_controller.dart';
 import 'contact_overrides_screen.dart';
 
-/// Settings screen covering PRD §19 plus the V1.2 additions (prd-v1.2.md
-/// §5): appearance, animation defaults, triggers, hardware, and advanced
-/// options. Every change persists locally (§24).
+/// Settings screen covering PRD Â§19 plus the V1.2 additions (prd-v1.2.md
+/// Â§5): appearance, animation defaults, triggers, hardware, and advanced
+/// options. Every change persists locally (Â§24).
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     required this.settings,
@@ -29,7 +30,7 @@ class SettingsScreen extends StatelessWidget {
   final AppSettingsController settings;
 
   /// User-created animations offered alongside built-ins as the default
-  /// preset (prd-v1.1.md §3/§4).
+  /// preset (prd-v1.1.md Â§3/Â§4).
   final List<StoredCustomAnimation> customAnimations;
 
   @override
@@ -43,7 +44,7 @@ class SettingsScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               const _SectionHeader('Appearance'),
-              GlassSurface(
+                GlassSurface(
                 blur: false,
                 child: SegmentedButton<ThemeMode>(
                   showSelectedIcon: false,
@@ -53,8 +54,10 @@ class SettingsScreen extends StatelessWidget {
                     ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
                   ],
                   selected: {settings.themeMode},
-                  onSelectionChanged: (selection) =>
-                      settings.setThemeMode(selection.first),
+                  onSelectionChanged: (selection) {
+                    Haptics.light();
+                    settings.setThemeMode(selection.first);
+                  },
                 ),
               ),
               const _SectionHeader('Animation'),
@@ -82,7 +85,10 @@ class SettingsScreen extends StatelessWidget {
                             ),
                         ],
                         onSelected: (value) {
-                          if (value != null) settings.setPresetId(value);
+                          if (value != null) {
+                            Haptics.selection();
+                            settings.setPresetId(value);
+                          }
                         },
                       ),
                       const SizedBox(height: 12),
@@ -95,11 +101,12 @@ class SettingsScreen extends StatelessWidget {
                       Slider(
                         value: settings.brightness,
                         onChanged: settings.setBrightness,
+                        onChangeEnd: (_) => Haptics.light(),
                       ),
                       Row(
                         children: [
                           const Expanded(child: Text('Default speed')),
-                          Text('${settings.speed.toStringAsFixed(2)}×'),
+                          Text('${settings.speed.toStringAsFixed(2)}Ã—'),
                         ],
                       ),
                       Slider(
@@ -108,6 +115,7 @@ class SettingsScreen extends StatelessWidget {
                         max: 3,
                         divisions: 11,
                         onChanged: settings.setSpeed,
+                        onChangeEnd: (_) => Haptics.light(),
                       ),
                       const SizedBox(height: 4),
                       SegmentedButton<int>(
@@ -117,20 +125,27 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         segments: const [
                           ButtonSegment(value: 1, label: Text('Once')),
-                          ButtonSegment(value: 2, label: Text('2×')),
-                          ButtonSegment(value: 3, label: Text('3×')),
+                          ButtonSegment(value: 2, label: Text('2Ã—')),
+                          ButtonSegment(value: 3, label: Text('3Ã—')),
                           ButtonSegment(value: 0, label: Text('Loop')),
                         ],
                         selected: {settings.repeatCount},
-                        onSelectionChanged: (selection) =>
-                            settings.setRepeatCount(selection.first),
+                        onSelectionChanged: (selection) {
+                          Haptics.light();
+                          settings.setRepeatCount(selection.first);
+                        },
                       ),
                       const SizedBox(height: 8),
                       SwitchListTile(
                         contentPadding: EdgeInsets.zero,
                         title: const Text('Haptic feedback'),
                         value: settings.hapticsEnabled,
-                        onChanged: settings.setHapticsEnabled,
+                        onChanged: (value) {
+                          // Buzz before the gate flips so turning the
+                          // toggle OFF still confirms.
+                          Haptics.light();
+                          settings.setHapticsEnabled(value);
+                        },
                       ),
                     ],
                   ),
@@ -149,7 +164,7 @@ class SettingsScreen extends StatelessWidget {
                       leading: Icon(Icons.camera_outlined),
                       title: Text('Selected flash camera'),
                       subtitle:
-                          Text('Auto-detected rear flash · Camera ID shown below'),
+                          Text('Auto-detected rear flash Â· Camera ID shown below'),
                     ),
                     ListTile(
                       leading: const Icon(Icons.monitor_heart_outlined),
@@ -185,7 +200,10 @@ class SettingsScreen extends StatelessWidget {
                           DropdownMenuEntry(value: 32, label: 'Eco (32 ms)'),
                         ],
                         onSelected: (value) {
-                          if (value != null) settings.setUpdateRateMs(value);
+                          if (value != null) {
+                            Haptics.selection();
+                            settings.setUpdateRateMs(value);
+                          }
                         },
                       ),
                       const SizedBox(height: 8),
@@ -196,7 +214,10 @@ class SettingsScreen extends StatelessWidget {
                           'Print playback sync markers to logcat',
                         ),
                         value: settings.debugLogging,
-                        onChanged: settings.setDebugLogging,
+                        onChanged: (value) {
+                          Haptics.light();
+                          settings.setDebugLogging(value);
+                        },
                       ),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
@@ -241,6 +262,7 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
     if (confirmed ?? false) {
+      Haptics.medium();
       // Best-effort safety shutoff, deliberately fire-and-forget so the
       // reset itself is instant and never depends on torch reachability
       // (no flash hardware, channel busy, etc.).
@@ -274,12 +296,12 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-/// Triggers section (prd-v1.2.md §2/§5): notification-access status with a
+/// Triggers section (prd-v1.2.md Â§2/Â§5): notification-access status with a
 /// direct link to the system screen, plus one configurable row per generic
 /// trigger type.
 ///
 /// Permissions discipline: listener access is only ever *requested* from
-/// inside the enable flow — when the user flips a trigger on without
+/// inside the enable flow â€” when the user flips a trigger on without
 /// access. An explanation dialog precedes the hand-off to system settings,
 /// and a granted return completes the pending enable automatically.
 class _TriggersSection extends StatefulWidget {
@@ -343,7 +365,7 @@ class _TriggersSectionState extends State<_TriggersSection>
       widget.settings.setTriggerEnabled(kind, true);
       return;
     }
-    // The exact-moment request: explain why first (prd.md §23), then hand
+    // The exact-moment request: explain why first (prd.md Â§23), then hand
     // off to Android's notification-access screen.
     final proceed = await showDialog<bool>(
       context: context,
@@ -351,7 +373,7 @@ class _TriggersSectionState extends State<_TriggersSection>
         title: const Text('Notification access needed'),
         content: const Text(
           'To flash on this event, Android requires notification access. '
-          'HiLight never reads or stores message text or sender details — '
+          'HiLight never reads or stores message text or sender details â€” '
           'it only reacts to notification events.',
         ),
         actions: [
@@ -391,7 +413,7 @@ class _TriggersSectionState extends State<_TriggersSection>
             subtitle: Text(_granted
                 ? 'Granted'
                 : (_pendingEnable != null
-                    ? 'Not granted — waiting for access…'
+                    ? 'Not granted â€” waiting for accessâ€¦'
                     : 'Not granted')),
             trailing: IconButton(
               tooltip: 'Open Android notification settings',
@@ -407,7 +429,7 @@ class _TriggersSectionState extends State<_TriggersSection>
             child: Text(
               'Triggers rely on Android\'s notification listener. Doze mode, '
               'battery optimization, or aggressive OEM battery managers can '
-              'delay or suppress them — and some clock apps label timers as '
+              'delay or suppress them â€” and some clock apps label timers as '
               'alarms.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -424,7 +446,7 @@ class _TriggersSectionState extends State<_TriggersSection>
               onPresetSelected: (id) =>
                   settings.setTriggerPresetId(kind, id),
               // Per-contact overrides attach to the call trigger, per-app
-              // decisions to app notifications (prd-v1.2.md §2/§3).
+              // decisions to app notifications (prd-v1.2.md Â§2/Â§3).
               trailingChild: switch (kind) {
                 TriggerKind.incomingCall =>
                   _ContactOverridesEntry(presets: _presetOptions()),
@@ -468,10 +490,10 @@ class _TriggerTile extends StatelessWidget {
         TriggerKind.incomingCall =>
           'Flash on call notifications while the screen is off',
         TriggerKind.sms =>
-          'Flash for SMS/MMS from your messaging app — chat apps like '
+          'Flash for SMS/MMS from your messaging app â€” chat apps like '
               'WhatsApp count as App notifications',
         TriggerKind.alarm =>
-          'Alarm notifications — Android labels many clock-app timers this way too',
+          'Alarm notifications â€” Android labels many clock-app timers this way too',
         TriggerKind.timer =>
           'Timer notifications where the clock app distinguishes them',
         TriggerKind.appNotification =>
@@ -494,7 +516,10 @@ class _TriggerTile extends StatelessWidget {
           title: Text(kind.label),
           subtitle: Text(_description),
           value: config.enabled,
-          onChanged: onToggle,
+          onChanged: (value) {
+            Haptics.light();
+            onToggle(value);
+          },
         ),
         if (config.enabled)
           Padding(
@@ -510,7 +535,10 @@ class _TriggerTile extends StatelessWidget {
                   DropdownMenuEntry(value: preset.id, label: preset.name),
               ],
               onSelected: (value) {
-                if (value != null) onPresetSelected(value);
+                if (value != null) {
+                  Haptics.selection();
+                  onPresetSelected(value);
+                }
               },
             ),
           ),
@@ -576,8 +604,8 @@ class _AppOverridesEntry extends StatelessWidget {
   }
 }
 
-/// Charging effects section (prd-v1.2.md §4, amended spec): master toggle,
-/// connect/disconnect animations, and five battery-milestone presets — all
+/// Charging effects section (prd-v1.2.md Â§4, amended spec): master toggle,
+/// connect/disconnect animations, and five battery-milestone presets â€” all
 /// independent, no periodic animation while charging.
 class _ChargingSection extends StatelessWidget {
   const _ChargingSection({
@@ -613,10 +641,13 @@ class _ChargingSection extends StatelessWidget {
             contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
             title: const Text('Charging effects'),
             subtitle:
-                const Text('Master switch — everything below is off until '
+                const Text('Master switch â€” everything below is off until '
                     'this is on'),
             value: config.masterEnabled,
-            onChanged: settings.setChargingMaster,
+            onChanged: (value) {
+            Haptics.light();
+            settings.setChargingMaster(value);
+          },
           ),
           if (config.masterEnabled) ...[
             const Divider(height: 1),
@@ -624,7 +655,10 @@ class _ChargingSection extends StatelessWidget {
               contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
               title: const Text('Animate on charger connect'),
               value: config.animateOnConnect,
-              onChanged: settings.setChargingConnectEnabled,
+              onChanged: (value) {
+            Haptics.light();
+            settings.setChargingConnectEnabled(value);
+          },
             ),
             if (config.animateOnConnect)
               Padding(
@@ -642,6 +676,7 @@ class _ChargingSection extends StatelessWidget {
                   ],
                   onSelected: (value) {
                     if (value != null) {
+                      Haptics.selection();
                       settings.setChargingConnectPreset(value);
                     }
                   },
@@ -653,7 +688,10 @@ class _ChargingSection extends StatelessWidget {
               subtitle: const Text(
                   'Any charging animation stops instantly first'),
               value: config.animateOnDisconnect,
-              onChanged: settings.setChargingDisconnectEnabled,
+              onChanged: (value) {
+            Haptics.light();
+            settings.setChargingDisconnectEnabled(value);
+          },
             ),
             if (config.animateOnDisconnect)
               Padding(
@@ -672,6 +710,7 @@ class _ChargingSection extends StatelessWidget {
                   ],
                   onSelected: (value) {
                     if (value != null) {
+                      Haptics.selection();
                       settings.setChargingDisconnectPreset(value);
                     }
                   },
@@ -681,7 +720,7 @@ class _ChargingSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
               child: Text(
-                'Battery milestones — fire once per charging session when '
+                'Battery milestones â€” fire once per charging session when '
                 'the level crosses upward:',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -752,11 +791,19 @@ class _MilestoneTile extends StatelessWidget {
                   DropdownMenuEntry(value: preset.id, label: preset.name),
               ],
               onSelected: (value) {
-                if (value != null) onPresetSelected(value);
+                if (value != null) {
+                  Haptics.selection();
+                  onPresetSelected(value);
+                }
               },
             ),
           ),
-          Switch(value: config.enabled, onChanged: onToggle),
+          Switch(
+              value: config.enabled,
+              onChanged: (value) {
+                Haptics.light();
+                onToggle(value);
+              }),
         ],
       ),
     );

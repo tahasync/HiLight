@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart' hide Easing;
 
+import '../../core/haptics.dart';
 import '../../core/motion/easing.dart';
 import '../../core/theme/glass_theme.dart';
 import '../../services/torch_service.dart';
@@ -10,7 +11,7 @@ import 'custom_animation_validation.dart';
 import 'editor_controller.dart';
 import 'stored_custom_animation.dart';
 
-/// Create/edit screen for custom animations (prd-v1.1.md §3). Pops with the
+/// Create/edit screen for custom animations (prd-v1.1.md Â§3). Pops with the
 /// saved [StoredCustomAnimation] on save, or null on cancel/delete.
 class AnimationEditorScreen extends StatefulWidget {
   const AnimationEditorScreen({
@@ -43,12 +44,14 @@ class _AnimationEditorScreenState extends State<AnimationEditorScreen> {
   }
 
   Future<void> _save() async {
+    Haptics.medium();
     final entry = await _controller.saveTo(CustomAnimationStore());
     if (!mounted) return;
     Navigator.of(context).pop(entry);
   }
 
   Future<void> _delete() async {
+    Haptics.medium();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

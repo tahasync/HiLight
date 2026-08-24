@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/haptics.dart';
 import '../../core/motion/hilight_animation.dart';
 import '../../core/theme/glass_theme.dart';
 import '../../services/contact_override_store.dart';
 
-/// Per-contact pattern assignments (prd-v1.2.md §2): pick a contact, assign
+/// Per-contact pattern assignments (prd-v1.2.md Â§2): pick a contact, assign
 /// a preset; calls from that contact fire it instead of the generic
 /// incoming-call preset.
 ///
 /// Permissions discipline: READ_CONTACTS is requested only when the user
-/// taps "Add contact" — an explanation dialog precedes the system runtime
+/// taps "Add contact" â€” an explanation dialog precedes the system runtime
 /// dialog, and the Contacts picker opens only after a grant.
 class ContactOverridesScreen extends StatefulWidget {
   const ContactOverridesScreen({required this.presets, super.key});
@@ -53,7 +54,7 @@ class _ContactOverridesScreenState extends State<ContactOverridesScreen> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      // 1. Explain why (prd.md §23), then ask — only now.
+      // 1. Explain why (prd.md Â§23), then ask â€” only now.
       final proceed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
@@ -77,7 +78,7 @@ class _ContactOverridesScreenState extends State<ContactOverridesScreen> {
       );
       if (proceed != true) return;
 
-      // 2. Runtime permission request — the exact enable moment.
+      // 2. Runtime permission request â€” the exact enable moment.
       final granted =
           await _contacts.invokeMethod<bool>('requestReadContacts') ?? false;
       if (!granted || !mounted) {
@@ -111,6 +112,7 @@ class _ContactOverridesScreenState extends State<ContactOverridesScreen> {
       final presetId = await _selectPreset(null);
       if (presetId == null || !mounted) return;
 
+      Haptics.medium();
       await _store.upsert(ContactOverride(
         lookupKey: details['lookupKey'] as String? ?? '',
         displayName: details['displayName'] as String? ?? '',
@@ -132,11 +134,13 @@ class _ContactOverridesScreenState extends State<ContactOverridesScreen> {
   Future<void> _editPreset(ContactOverride override) async {
     final presetId = await _selectPreset(override.presetId);
     if (presetId == null) return;
+    Haptics.light();
     await _store.upsert(override.copyWith(presetId: presetId));
     await _reload();
   }
 
   Future<void> _remove(ContactOverride override) async {
+    Haptics.medium();
     await _store.remove(override.lookupKey);
     await _reload();
   }

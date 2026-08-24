@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../core/haptics.dart';
 import '../../core/motion/hilight_animation.dart';
 import '../../core/theme/glass_theme.dart';
 import '../../services/app_override_store.dart';
 
-/// Per-app flash decisions (prd-v1.2.md §3): every installed app can be
+/// Per-app flash decisions (prd-v1.2.md Â§3): every installed app can be
 /// enabled or disabled individually, and enabled apps may carry their own
 /// preset instead of the generic one.
 ///
@@ -74,6 +75,7 @@ class _AppOverridesScreenState extends State<AppOverridesScreen> {
     final packageName = app['packageName']! as String;
     final appName = app['appName']! as String;
     final current = _effectiveEntry(packageName, appName);
+    Haptics.light();
     await _store.upsert(current.copyWith(flashEnabled: enabled));
     await _reload();
   }
@@ -108,6 +110,7 @@ class _AppOverridesScreenState extends State<AppOverridesScreen> {
       ),
     );
     if (selected == null) return;
+    Haptics.selection();
     final presetId = selected.isEmpty ? null : selected;
     await _store.upsert(current.copyWith(presetId: presetId));
     await _reload();
