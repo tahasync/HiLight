@@ -106,7 +106,7 @@ class SettingsScreen extends StatelessWidget {
                       Row(
                         children: [
                           const Expanded(child: Text('Default speed')),
-                          Text('${settings.speed.toStringAsFixed(2)}—'),
+                          Text('${settings.speed.toStringAsFixed(2)}×'),
                         ],
                       ),
                       Slider(
