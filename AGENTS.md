@@ -60,10 +60,28 @@ android/app/src/main/kotlin/.../
 │   ├── TorchCapability.kt
 │   ├── TileEngineHost.kt
 │   ├── TileControlChannel (in TileEngineHost.kt)
-│   └── HilightTileService.kt
+│   ├── HilightTileService.kt
+│   ├── HilightNotificationListenerService.kt
+│   ├── ChargingBridge.kt
+│   ├── ContactsChannel.kt
+│   ├── AppsChannel.kt
+│   └── TriggerSupportChannel.kt
 ```
 
-`prd.md` is the single source of truth for requirements, numbers, and acceptance criteria; `prd-v1.1.md` is the source of truth for every V1.1 number (preset tables, validation limits). This file is the single source of truth for how to behave while building.
+`prd.md` is the single source of truth for requirements, numbers, and acceptance criteria; `prd-v1.1.md` is the source of truth for every V1.1 number (preset tables, validation limits). This file is the single source of truth for how to behave while building. `prd-v1.2.md` governs the V1.2 trigger/per-contact/per-app/charging milestone, **as amended by the product-owner deltas below**.
+
+## V1.2 Additions (shipped)
+
+- **Notification triggers** (`HilightNotificationListenerService.kt` + `lib/services/notification_trigger_classifier.dart` + `trigger_playback_controller.dart`): the Kotlin listener is a dumb pipe — it forwards only presence-level metadata (category, package, ongoing, caller URI) over `hilight/tile_control` (`triggerEvent`); ALL classification and gating lives in Dart so it stays unit-testable. Classification is **category-first with a messaging-app allowlist for SMS** (chat platforms label DMs `"msg"` exactly like SMS — package fallbacks without the allowlist caused false flashes). There is no `CATEGORY_TIMER`: `"alarm"` means "alarm or timer", resolved alarm-first with timer fallback, surfaced honestly in UI. Incoming-call animations **loop while ringing** and stop on the notification's removal (55 s cap inside the wake-lock window).
+- **Permissions discipline (hard rule)**: notification-listener access is requested only inside the enable flow (explanation dialog → system screen → pending-enable auto-completes on grant); `READ_CONTACTS` only when *Add contact* is tapped. Manifest must declare `READ_CONTACTS` and `<queries>` entries for the contacts picker AND main/launcher (package visibility) — missing either silently breaks the flow.
+- **Per-contact overrides** (`contact_override_store.dart`, `contact_matcher.dart`): stored as one JSON list (`contactOverrides.v1`); matching is digit-normalized with trunk-prefix variants (local `0314…` vs `+92314…`) and a ≥7-digit suffix rule. Caller identity comes from `EXTRA_CALL_PERSON` ("android.callPerson", API 31+ only) — never logged, never stored.
+- **Per-app overrides** (`app_override_store.dart` + `app_overrides_screen.dart`): every installed app individually enable/disable + optional preset; unlisted apps follow the App-notifications trigger. Precedence everywhere: **contact > app > generic > none** (fully unit-tested).
+- **Charging effects** (`ChargingBridge.kt` + `charging_playback_controller.dart`): master toggle, on-connect, on-disconnect, five battery milestones (20/35/50/70/100 %) fired once per session on upward crossing (plug-in level consumes lower thresholds). **No periodic repeat** — product-owner delta overriding prd-v1.2.md §4. Disconnect kills charging-owned playback instantly before the optional disconnect animation; manual previews are never stomped.
+- **Charging delivery — CRITICAL**: manifest receivers for `POWER_CONNECTED/DISCONNECTED` got **zero delivery** on Android 16/17 (empirically, both test devices). Use the runtime-registered `ChargingBridge` (host-counted: NLS + Activity share one receiver; unregistering only when the last host leaves — closing the app must NOT kill the listener-hosted registration). Plug broadcasts carry no level: read the sticky `ACTION_BATTERY_CHANGED`. Devices whose ROM drops these broadcasts entirely (Pixel 4 custom ROM) are covered by a **4 s Dart polling fallback** (`chargingSnapshot` on `hilight/trigger_support`) with a 5 s connect dedupe so broadcast+poll never double-fire.
+- **Trigger playback rules**: plays once, skips when torch busy, 1.2 s debounce; concurrent events must never restart playback (busy/debounce gates run after all awaits — atomic start, regression-tested).
+- **Update dialog**: `showUpdateDialog` must be given a context UNDER the navigator (`GlobalKey<NavigatorState>` in `HilightApp`) — the root widget's context silently throws and the catch swallows it.
+- **Long-press editing**: customs edit in place; built-ins open the editor as an editable copy (built-ins are immutable §28 tables).
+- **Launcher icon**: the artwork is a self-contained tile → foreground layer at `adaptive_icon_foreground_inset: 13` (fills circular masks with no black edges; 24 = too small, background-layer = zoom-cropped — both tried on device).
 
 ## V1.1 Additions (shipped)
 
