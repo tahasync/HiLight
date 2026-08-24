@@ -22,6 +22,11 @@ class _HilightAppState extends State<HilightApp> {
       AppSettingsController(PreferencesService());
   Timer? _updateTimer;
 
+  /// The update dialog must be pushed onto the MaterialApp's navigator —
+  /// this State's own context sits above it, where showDialog cannot find a
+  /// Navigator (it would throw and the silent catch would hide the failure).
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -37,7 +42,9 @@ class _HilightAppState extends State<HilightApp> {
       if (!mounted || update == null) return;
       final pkg = await PackageInfo.fromPlatform();
       if (!mounted || !isNewerVersion(pkg.version, update.tagName)) return;
-      await showUpdateDialog(context, update);
+      final dialogContext = _navigatorKey.currentContext;
+      if (dialogContext == null || !dialogContext.mounted) return;
+      await showUpdateDialog(dialogContext, update);
     } catch (_) {
       // An update check must never disturb a normal launch.
     }
@@ -65,6 +72,7 @@ class _HilightAppState extends State<HilightApp> {
           builder: (context, _) {
             return MaterialApp(
               title: 'HiLight',
+              navigatorKey: _navigatorKey,
               theme: ThemeData(
                 colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueGrey),
               ),
